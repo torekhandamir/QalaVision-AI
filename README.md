@@ -21,14 +21,14 @@ City services receive many reports, but dispatch teams need to know what should 
 - estimating repair budget before dispatch;
 - showing social impact and relevance for akimat decisions;
 - giving transparent scoring instead of black-box ranking;
-- preparing a workflow that can later connect to real computer vision or OpenAI API.
+- connecting citizen reports to a server-side OpenAI vision/text analysis route.
 
-## AI-Ready Architecture
+## AI Analysis Architecture
 
-The analysis module is isolated in:
+The client never calls OpenAI directly. Browser code calls the project API route, and the API route reads the secret key from server environment variables:
 
 ```txt
-lib/ai-analysis.ts
+components/submission-section.tsx -> lib/ai-analysis.ts -> app/api/analyze/route.ts -> OpenAI Responses API
 ```
 
 Main function:
@@ -60,14 +60,14 @@ Output:
 - `explanation`
 - `repairRecommendation`
 
-To connect a real model later, replace the internal implementation of `analyzeIssue()` with:
+How it works:
 
-- OpenAI API vision/text analysis;
-- custom computer vision API;
-- YOLO object detection endpoint;
-- municipal data service.
-
-The UI and dashboard do not need to be rewritten.
+- In the browser, `analyzeIssue(image, formData)` sends a multipart request to `/api/analyze`.
+- `/api/analyze` uses `process.env.OPENAI_API_KEY` on the server.
+- If `OPENAI_API_KEY` exists, the route sends the citizen text and photo to the OpenAI Responses API.
+- If the key is not configured locally, the route falls back to the internal scoring engine so development still works.
+- The returned result is normalized into the same `AIAnalysisResult` shape used by the dashboard and admin page.
+- The API key is never exposed through browser JavaScript.
 
 ## Scoring Methodology
 
@@ -166,23 +166,28 @@ npm run build
 npm run start
 ```
 
-## Environment Variables For Future OpenAI Integration
+## OpenAI Environment Variables
 
-Do not put API keys into client components, `.env`, GitHub commits or browser code.
+Do not put API keys into client components, GitHub commits or browser code.
 
-For local development, create `.env.local`:
+For local development with real OpenAI analysis, create `.env.local`:
 
 ```txt
 OPENAI_API_KEY=your_key_here
+OPENAI_MODEL=gpt-5.5
 ```
 
-For Vercel, add the key only as a server-side environment variable in the project dashboard:
+`OPENAI_MODEL` is optional. If it is not set, the server route uses `gpt-5.5`.
+
+For Vercel, add the key in the project dashboard:
 
 ```txt
 OPENAI_API_KEY
 ```
 
-Use it only inside server code, for example:
+Then redeploy the project. After redeploy, every visitor uses this server-side key through `/api/analyze`; they do not need their own key.
+
+Use secrets only inside server code, for example:
 
 - Next.js Route Handler: `app/api/analyze/route.ts`
 - Server Action
@@ -194,10 +199,11 @@ Never expose it with `NEXT_PUBLIC_`. Variables with that prefix are bundled into
 
 ```txt
 app/                       Next.js routes
+app/api/analyze/route.ts   Server-side OpenAI analysis endpoint
 app/page.tsx               Single-page citizen + akimat flow
 app/admin/issues/[id]      Admin issue details
 components/                UI components and page content
-lib/ai-analysis.ts         AI-ready analysis module
+lib/ai-analysis.ts         Shared analysis types and client/server entry point
 lib/demo-data.ts           Demo issues and issue creation helper
 lib/i18n.ts                EN / RU / KZ interface copy
 public/images/             Local visual assets

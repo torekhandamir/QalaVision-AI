@@ -559,10 +559,34 @@ export async function analyzeIssue(
   image: File | null,
   formData: AnalyzeIssueFormData
 ): Promise<AIAnalysisResult> {
+  if (typeof window !== "undefined") {
+    return analyzeIssueOnServer(image, formData);
+  }
+
   return runLocalRiskAnalysis(image, formData);
 }
 
-async function runLocalRiskAnalysis(
+async function analyzeIssueOnServer(
+  image: File | null,
+  formData: AnalyzeIssueFormData
+): Promise<AIAnalysisResult> {
+  const payload = new FormData();
+  payload.append("formData", JSON.stringify(formData));
+  if (image) payload.append("image", image);
+
+  const response = await fetch("/api/analyze", {
+    method: "POST",
+    body: payload
+  });
+
+  if (!response.ok) {
+    throw new Error("Analysis request failed");
+  }
+
+  return (await response.json()) as AIAnalysisResult;
+}
+
+export async function runLocalRiskAnalysis(
   image: File | null,
   formData: AnalyzeIssueFormData
 ): Promise<AIAnalysisResult> {
