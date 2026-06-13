@@ -1,221 +1,390 @@
 # QalaVision AI
 
-**Hackathon track:** Track 3 — City Safety & Social Services
+**Команда:** Alash  
+**Хакатон:** SmartScape Hackathon 2026  
+**Трек:** City Safety & Social Services  
+**MVP:** [https://qala-vision-ai.vercel.app/#top](https://qala-vision-ai.vercel.app/#top)  
+**GitHub:** [https://github.com/torekhandamir/QalaVision-AI](https://github.com/torekhandamir/QalaVision-AI)
 
-QalaVision AI is an AI-ready GovTech MVP for Almaty. Citizens submit photo evidence of urban issues, and the platform turns each report into explainable prioritization for akimat teams: urgency, social impact, relevance for city services, estimated repair budget, recommended deadline and a full operational report.
+QalaVision AI — это MVP Smart City / GovTech продукта для Алматы, который помогает превращать заявки жителей о городских проблемах в структурированный приоритет ремонта для акимата.
 
-## MVP Flow
+Пользователь отправляет фото, район, адрес, геолокацию и короткое описание проблемы. Система передает эти данные в серверный AI-маршрут, получает анализ риска, считает приоритет, примерную стоимость ремонта, рекомендуемый срок реагирования и показывает проблему на dashboard и карте.
 
-- `/` — single-page vertical product flow: landing, citizen submission, akimat dashboard and risk map.
-- Submit section — photo upload, phone camera capture, preview, district selection, geolocation, manual address and description.
-- Dashboard section — KPI cards, readable Recharts charts, filters, issue table and priority queue.
-- Risk map section — real Leaflet/OpenStreetMap map of Almaty with colored issue markers and popups.
-- `/admin/issues/[id]` — full issue details page for city staff.
+Важно: это MVP для хакатона, а не промышленная система. Для реального внедрения нужны данные акимата, разметка операторов, интеграция с внутренними процессами и отдельная валидация точности.
 
-## Why It Matters
+## Проблема
 
-City services receive many reports, but dispatch teams need to know what should be fixed first. QalaVision AI helps by:
+Городские службы получают много заявок: ямы, сломанные тротуары, мусор, неработающие фонари, подтопления, поврежденные знаки. Но поток заявок сам по себе не отвечает на главный операционный вопрос:
 
-- structuring citizen reports into operational data;
-- prioritizing critical safety issues;
-- estimating repair budget before dispatch;
-- showing social impact and relevance for akimat decisions;
-- giving transparent scoring instead of black-box ranking;
-- connecting citizen reports to a server-side OpenAI vision/text analysis route.
+**Что нужно чинить первым и почему?**
 
-## AI Analysis Architecture
+Без приоритизации часть заявок может обрабатываться по порядку поступления, а не по уровню риска для людей. Это создает проблемы:
 
-The client never calls OpenAI directly. Browser code calls the project API route, and the API route reads the secret key from server environment variables:
+- критичные дефекты могут теряться среди менее срочных обращений;
+- сложно быстро оценить социальный эффект проблемы;
+- нет единого объяснимого скоринга для очереди ремонта;
+- бюджет и сроки ремонта часто оцениваются вручную;
+- руководителям сложно видеть ситуацию по районам на карте и в аналитике.
+
+## Решение
+
+QalaVision AI строит понятный workflow:
 
 ```txt
-components/submission-section.tsx -> lib/ai-analysis.ts -> app/api/analyze/route.ts -> OpenAI Responses API
+Фото жителя -> AI-анализ -> риск -> приоритет -> стоимость -> срок -> dashboard -> карта
 ```
 
-Main function:
+Система помогает акимату не просто принять обращение, а сразу получить:
 
-```ts
-analyzeIssue(image, formData)
+- определенный тип проблемы;
+- confidence анализа;
+- urgency score от 0 до 100;
+- relevance score для акимата;
+- social impact score;
+- примерную стоимость ремонта в KZT;
+- рекомендуемый срок реагирования;
+- объяснение, почему заявка получила такой балл;
+- сгенерированный текст обращения/отчета для акимата;
+- место проблемы на карте Алматы.
+
+## Что реализовано в MVP
+
+| Блок | Реализовано | Польза для жюри и акимата |
+|---|---|---|
+| Landing page | Premium GovTech интерфейс, статистика, CTA, EN/RU/KZ | Быстро объясняет ценность продукта |
+| Citizen submission | Фото, камера телефона, preview, район, адрес, геолокация, описание | Житель может подать заявку без backend-аккаунта |
+| AI-анализ | Серверный API route `/api/analyze`, OpenAI API через `OPENAI_API_KEY` | Ключ не попадает в браузер, анализ можно улучшать без переписывания UI |
+| Inline result | После submit показывается тип проблемы, срочность, бюджет, срок, объяснение и report | Пользователь сразу понимает результат своей заявки |
+| Akimat dashboard | KPI, таблица заявок, фильтры, priority queue | Сотрудники видят, что чинить первым |
+| Charts | Recharts: заявки по районам, срочность, бюджет по категориям | Дает операционную аналитику |
+| Risk map | Leaflet + OpenStreetMap, точки проблем по Алматы | Видно распределение рисков на карте |
+| Admin issue page | Детальная карточка заявки, статус, отчет, рекомендация | Подходит для работы оператора |
+| Локальные данные | 12 demo-заявок по районам Алматы | MVP работает без сложного backend |
+| LocalStorage | Новые заявки сохраняются в браузере | Достаточно для демо и хакатона |
+| Документация | Архитектура, методология, запуск, ограничения | Закрывает критерий documentation |
+
+## Скриншоты
+
+> Пути для скриншотов в репозитории:
+
+![Home](public/screenshots/home.png)
+
+![Submit](public/screenshots/submit.png)
+
+![Dashboard](public/screenshots/dashboard.png)
+
+![Risk map](public/screenshots/risk-map.png)
+
+## Где здесь искусственный интеллект
+
+AI используется не как декоративный чат, а как операционный слой принятия решений.
+
+В MVP реализован серверный маршрут:
+
+```txt
+app/api/analyze/route.ts
 ```
 
-Input:
+Клиентская форма вызывает:
 
-- image file
-- district
-- geolocation
-- manual address
-- citizen description
-- selected problem type
+```txt
+lib/ai-analysis.ts -> analyzeIssue(image, formData)
+```
 
-Output:
+Дальше запрос уходит на серверный endpoint:
 
-- `detectedProblem`
-- `confidence`
-- `urgencyScore`
-- `akimatRelevanceScore`
-- `socialImpactScore`
-- `estimatedRepairCostKZT`
-- `repairDeadline`
-- `aiGeneratedDescription`
-- `fullReportForAkimat`
-- `explanation`
-- `repairRecommendation`
+```txt
+/api/analyze
+```
 
-How it works:
+Серверный endpoint:
 
-- In the browser, `analyzeIssue(image, formData)` sends a multipart request to `/api/analyze`.
-- `/api/analyze` uses `process.env.OPENAI_API_KEY` on the server.
-- The route sends the citizen text and photo to the OpenAI Responses API.
-- If the key is not configured, the route returns a configuration error instead of fabricating an analysis result.
-- The returned result is normalized into the same `AIAnalysisResult` shape used by the dashboard and admin page.
-- The API key is never exposed through browser JavaScript.
+- принимает фото и данные формы;
+- читает `OPENAI_API_KEY` только на сервере;
+- отправляет данные в OpenAI API;
+- просит вернуть строго структурированный JSON;
+- валидирует результат;
+- нормализует score, deadline и поля отчета;
+- возвращает результат в UI.
 
-## Scoring Methodology
+AI возвращает:
 
-Urgency score:
+- `detectedProblem`;
+- `confidence`;
+- `urgencyScore`;
+- `akimatRelevanceScore`;
+- `socialImpactScore`;
+- `estimatedRepairCostKZT`;
+- `repairDeadline`;
+- `aiGeneratedDescription`;
+- `fullReportForAkimat`;
+- `explanation`;
+- `repairRecommendation`.
+
+Ключ OpenAI не используется в client components и не имеет префикса `NEXT_PUBLIC_`, поэтому не попадает в JavaScript браузера.
+
+## Данные и методология
+
+В MVP есть 12 demo-заявок по районам Алматы:
+
+- Алмалинский;
+- Алатауский;
+- Ауэзовский;
+- Бостандыкский;
+- Жетысуский;
+- Медеуский;
+- Наурызбайский;
+- Турксибский.
+
+Каждая заявка содержит:
+
+- район;
+- адрес;
+- координаты;
+- описание;
+- тип проблемы;
+- urgency score;
+- relevance score;
+- social impact score;
+- estimated budget;
+- deadline;
+- статус;
+- наличие фото.
+
+Методология MVP основана на объяснимой оценке риска. AI получает формулу и правила оценки в prompt, а затем возвращает не только итоговый score, но и текстовое объяснение.
+
+Для реального внедрения потребуется:
+
+- исторический датасет заявок акимата;
+- фактические сроки закрытия работ;
+- фактическая стоимость ремонтов;
+- ручная разметка операторов по типам дефектов;
+- фотографии с подтвержденными классами проблем;
+- валидация точности модели на отложенной выборке;
+- настройка правил под реальные регламенты города.
+
+## Проверка качества AI-анализа
+
+Для MVP качество проверяется ручными QA-сценариями по классам дефектов. Это не заменяет полноценную ML-валидацию, но показывает, что система возвращает структурированный и объяснимый результат.
+
+| Класс дефекта | Что подаем на вход | Что проверяем вручную | Ожидаемый результат |
+|---|---|---|---|
+| Яма на дороге | Фото/описание ямы на проезжей части | Тип проблемы, высокий риск для транспорта, бюджет по площади | `pothole`, высокий urgency, ремонт дороги |
+| Поврежденный тротуар | Фото тротуара, описание рядом со школой | Социальный эффект для пешеходов | `broken_sidewalk`, повышенный social impact |
+| Мусор | Фото скопления мусора | Не завышает срочность как у аварийных дефектов | `trash`, средний или низкий urgency |
+| Неработающий фонарь | Описание темного участка/вечернего маршрута | Учитывает безопасность пешеходов | `broken_streetlight`, срок до 3-7 дней |
+| Трещина на дороге | Фото/описание дорожной трещины | Не путает с ямой, оценивает риск расширения | `road_crack`, бюджет по м2 |
+| Подтопление | Фото воды на дороге, описание после дождя | Высокая срочность, риск для движения | `flooding`, высокий или критичный urgency |
+| Поврежденный знак | Фото знака, описание рядом с переходом | Учитывает риск для людей и транспорта | `damaged_sign`, рекомендация заменить знак |
+
+Для боевой версии нужна отдельная таблица метрик:
+
+- accuracy по классам дефектов;
+- precision/recall по критичным заявкам;
+- средняя ошибка оценки бюджета;
+- совпадение рекомендуемого срока с решением оператора;
+- доля дублей и ложных заявок.
+
+## Расчёт приоритета
+
+Приоритет заявки строится как объяснимый score:
 
 ```txt
 urgencyScore =
-problemSeverity * 0.4 +
+problemSeverity * 0.40 +
 locationRisk * 0.25 +
-socialImpactScore * 0.2 +
+socialImpactScore * 0.20 +
 photoConfidence * 0.15
 ```
 
-Where:
+| Фактор | Вес | Что означает |
+|---|---:|---|
+| Опасность проблемы | 40% | Насколько сам дефект опасен: яма, подтопление, трещина, фонарь, мусор |
+| Риск локации | 25% | Район, дорожная нагрузка, близость к общественным объектам |
+| Социальный эффект | 20% | Влияние на пешеходов, водителей, детей, пожилых людей, школы и больницы |
+| Доказательность фото | 15% | Насколько фото помогает подтвердить проблему |
 
-- `problemSeverity` — base hazard of the detected issue category.
-- `locationRisk` — district risk, road load and proximity to public infrastructure.
-- `socialImpactScore` — expected effect on pedestrians, drivers, schools, hospitals and vulnerable groups.
-- `photoConfidence` — stronger when photo evidence is attached.
-
-Akimat relevance also considers:
+Дополнительно `akimatRelevanceScore` учитывает:
 
 - urgency;
-- similar complaints in the district;
-- risk to people;
-- proximity to schools, hospitals and roads;
-- district context.
+- похожие жалобы в районе;
+- риск для людей;
+- близость к школе, больнице или дороге;
+- контекст района.
 
-Repair cost rules:
+## Оценка стоимости
 
-- pothole: 7000 KZT per m2
-- broken sidewalk: 12000 KZT per m2
-- trash: 15000 KZT fixed
-- streetlight: 45000 KZT fixed
-- road crack: 5000 KZT per m2
-- flooding: 80000 KZT fixed
-- damaged sign: 35000 KZT fixed
+В MVP стоимость считается как ориентировочная оценка для первичной приоритизации, а не как официальный сметный расчет.
 
-Deadline rules:
+| Тип проблемы | Правило оценки |
+|---|---|
+| Яма на дороге | 7 000 KZT за м2 |
+| Поврежденный тротуар | 12 000 KZT за м2 |
+| Мусор | 15 000 KZT фиксировано |
+| Неработающий фонарь | 45 000 KZT фиксировано |
+| Трещина на дороге | 5 000 KZT за м2 |
+| Подтопление | 80 000 KZT фиксировано |
+| Поврежденный знак | 35 000 KZT фиксировано |
 
-- Critical: 24 hours
-- High: 3 days
-- Medium: 7 days
-- Low: 30 days
+Для боевой версии стоимость должна уточняться по данным подрядчиков, фактическим актам выполненных работ и нормативам города.
 
-## Data
+## Метаданные и защита от фейковых заявок
 
-The project includes 12 demo issues across Almaty districts:
+В MVP уже используются или могут быть расширены следующие метаданные:
 
-- Алмалинский
-- Алатауский
-- Ауэзовский
-- Бостандыкский
-- Жетысуский
-- Медеуский
-- Наурызбайский
-- Турксибский
+| Метаданные | Статус в MVP | Зачем нужно |
+|---|---|---|
+| Время отправки | Есть для созданных заявок | Очередность, SLA, история |
+| Район | Есть | Фильтры dashboard и аналитика по районам |
+| Адрес | Есть | Оператору проще найти проблему |
+| Геолокация | Есть через browser API | Карта и проверка места |
+| Наличие фото | Есть | Повышает доверие к заявке |
+| Тип файла | Частично через upload input | Проверка, что загружено изображение |
+| Дубликаты | Future layer | Поиск похожих жалоб в районе |
+| EXIF/GPS | Будущий слой боевой версии | Проверка подлинности фото и места съемки |
 
-New submissions are stored in browser `localStorage`, so the MVP works without a backend.
+Для защиты от фейковых заявок в боевой версии можно добавить:
 
-## Tech Stack
+- сравнение GPS фото и browser geolocation;
+- проверку времени съемки через EXIF;
+- поиск дублей по району, координатам и похожему описанию;
+- rate limit по устройству/IP;
+- операторскую модерацию спорных заявок;
+- статус “требует проверки”.
 
-- Next.js 14
-- TypeScript
-- Tailwind CSS
-- Framer Motion
-- Recharts
-- Leaflet + OpenStreetMap
-- Manrope font via `@fontsource/manrope`
-- Lucide React icons
+## Технологический стек
 
-## Run Locally
+| Категория | Технологии |
+|---|---|
+| Frontend | Next.js 14, React, TypeScript |
+| UI | Tailwind CSS, Framer Motion, Lucide React |
+| Графики | Recharts |
+| Карта | Leaflet + OpenStreetMap |
+| AI endpoint | Next.js server API route `app/api/analyze/route.ts` |
+| Хранение MVP | Demo data + browser `localStorage` |
+| Деплой | Vercel |
+| Языки интерфейса | EN / RU / KZ |
 
-Install dependencies:
+## Запуск проекта
+
+Клонировать репозиторий:
+
+```bash
+git clone https://github.com/torekhandamir/QalaVision-AI.git
+cd QalaVision-AI
+```
+
+Установить зависимости:
 
 ```bash
 npm install
 ```
 
-Start development server:
+Создать `.env.local` для локального AI-анализа:
+
+```txt
+OPENAI_API_KEY=your_openai_api_key
+OPENAI_MODEL=gpt-5.5
+```
+
+`OPENAI_MODEL` опционален. Если переменная не указана, серверный route использует модель по умолчанию из кода.
+
+Запустить dev-сервер:
 
 ```bash
 npm run dev
 ```
 
-Open:
+Открыть:
 
 ```txt
 http://localhost:3000
 ```
 
-Production build:
+Проверить production-сборку:
 
 ```bash
 npm run build
+```
+
+Запустить production-режим локально:
+
+```bash
 npm run start
 ```
 
-## OpenAI Environment Variables
+Для Vercel:
 
-Do not put API keys into client components, GitHub commits or browser code.
+1. Добавить environment variable `OPENAI_API_KEY`.
+2. Не использовать `NEXT_PUBLIC_OPENAI_API_KEY`.
+3. Сделать redeploy.
 
-For local development with real OpenAI analysis, create `.env.local`:
-
-```txt
-OPENAI_API_KEY=your_key_here
-OPENAI_MODEL=gpt-5.5
-```
-
-`OPENAI_MODEL` is optional. If it is not set, the server route uses `gpt-5.5`.
-
-Without `OPENAI_API_KEY`, the app still loads, but submitting a new issue cannot run AI analysis.
-
-For Vercel, add the key in the project dashboard:
+## Структура проекта
 
 ```txt
-OPENAI_API_KEY
+app/
+  api/analyze/route.ts        Серверный AI-анализ через OpenAI API
+  admin/issues/[id]/page.tsx  Детальная страница заявки для акимата
+  globals.css                 Глобальные стили
+  layout.tsx                  Root layout
+  page.tsx                    Single-page flow: landing, submit, dashboard, map
+
+components/
+  hero-section.tsx            Первый экран и статистика
+  submission-section.tsx      Форма заявки и inline AI-result
+  dashboard-section.tsx       Dashboard, charts, таблица и priority queue
+  risk-map-page.tsx           Leaflet/OpenStreetMap карта
+  admin-issue-details.tsx     Детальная карточка заявки
+  issue-provider.tsx          Работа с demo data и localStorage
+  language-provider.tsx       Переключение EN/RU/KZ
+
+lib/
+  ai-analysis.ts              Типы анализа, справочники, клиентский вызов /api/analyze
+  demo-data.ts                12 demo-заявок и создание новой заявки
+  format.ts                   Форматирование чисел и KZT
+  i18n.ts                     Тексты интерфейса EN/RU/KZ
+  utils.ts                    UI helper
+
+public/
+  images/                     Визуальные ассеты проекта
+  screenshots/                Скриншоты для README
 ```
 
-Then redeploy the project. After redeploy, every visitor uses this server-side key through `/api/analyze`; they do not need their own key.
+## Риски и ограничения
 
-Use secrets only inside server code, for example:
+QalaVision AI — это MVP, поэтому есть ограничения:
 
-- Next.js Route Handler: `app/api/analyze/route.ts`
-- Server Action
-- backend API endpoint
+- нет постоянной backend-базы данных;
+- новые заявки сохраняются в `localStorage` браузера;
+- demo-данные не являются официальными данными акимата;
+- оценка стоимости является ориентировочной;
+- AI-анализ требует отдельной проверки точности;
+- для реального внедрения нужна интеграция с CRM/dispatch системой акимата;
+- нужна модерация фейковых, повторных и неполных заявок;
+- нужны реальные SLA и регламенты реагирования;
+- карта использует OpenStreetMap и не подключена к внутренним городским GIS-слоям.
 
-Never expose it with `NEXT_PUBLIC_`. Variables with that prefix are bundled into browser JavaScript.
+## Roadmap после хакатона
 
-## Project Structure
+| Этап | Что добавить |
+|---|---|
+| Backend | PostgreSQL, API для заявок, авторизация операторов |
+| Данные акимата | Импорт исторических обращений, статусов и фактических затрат |
+| Валидация AI | Размеченный датасет, accuracy/precision/recall, human review |
+| Антифрод | Дубли, EXIF/GPS, rate limits, проверка подозрительных заявок |
+| Workflow акимата | Назначение ответственного отдела, SLA, статусы ремонта |
+| GIS | Интеграция с городскими слоями дорог, школ, больниц и освещения |
+| Уведомления | SMS/Telegram/email статус для жителей |
+| Мобильный UX | PWA, offline draft, быстрый camera-first режим |
+| Экспорт | PDF/CSV отчеты для планирования и бюджета |
 
-```txt
-app/                       Next.js routes
-app/api/analyze/route.ts   Server-side OpenAI analysis endpoint
-app/page.tsx               Single-page citizen + akimat flow
-app/admin/issues/[id]      Admin issue details
-components/                UI components and page content
-lib/ai-analysis.ts         Shared analysis types and client/server entry point
-lib/demo-data.ts           Demo issues and issue creation helper
-lib/i18n.ts                EN / RU / KZ interface copy
-public/images/             Local visual assets
-```
+## Покрытие критериев SmartScape Hackathon 2026
 
-## Hackathon Criteria Coverage
-
-- Relevance: real urban safety and repair prioritization problem.
-- Innovation: AI prioritization, cost estimation, social impact and explainable scoring.
-- Technical: photo upload/camera capture, AI-ready module, map, dashboard and admin details.
-- Practicality: workflow is directly usable by akimat teams for triage.
-- Data/methodology: transparent scoring formula and repair cost rules.
-- Documentation: setup, architecture, methodology and deployment guidance are included here.
+| Критерий | Как QalaVision AI закрывает |
+|---|---|
+| Актуальность проблемы | Городские заявки требуют приоритизации по риску, а не только по очереди |
+| Инновационность | AI превращает фото и описание в score, бюджет, deadline и объяснение |
+| Техническая реализация | Фото, камера, server AI route, dashboard, charts, карта, admin page |
+| Практическая применимость | Акимат получает очередь работ, фильтры, карту и полный report |
+| Данные и методология | Есть формула score, правила бюджета, demo data и план валидации |
+| Документация | README содержит запуск, архитектуру, ограничения и roadmap |
