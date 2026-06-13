@@ -1,42 +1,103 @@
 # QalaVision AI
 
-**Track 3: City Safety & Social Services**
+**Hackathon track:** Track 3 — City Safety & Social Services
 
-QalaVision AI is an AI-ready GovTech / Smart City web app for Almaty. It helps citizens submit urban issues with photo and location, then turns each report into explainable repair prioritization for akimate teams.
+QalaVision AI is an AI-ready GovTech MVP for Almaty. Citizens submit photo evidence of urban issues, and the platform turns each report into explainable prioritization for akimat teams: urgency, social impact, relevance for city services, estimated repair budget, recommended deadline and a full operational report.
 
-## What It Does
+## MVP Pages
 
-- Citizens select an Almaty district, attach or capture a photo, share browser geolocation, choose a fallback problem type and add a short description.
-- The app sends `image` and `formData` into `analyzeIssue(image, formData)` from [`lib/ai-analysis.ts`](./lib/ai-analysis.ts).
-- The current implementation is a mock AI engine, but the interface is prepared for OpenAI API, custom computer vision, or YOLO-based detection.
-- The AI result returns detected problem type, confidence, urgency score, akimate relevance score, estimated repair cost, repair deadline, explanation and generated complaint text.
-- The akimate dashboard aggregates all demo and submitted issues into filters, KPI cards, Recharts charts, a map placeholder and a priority queue.
+- `/` — premium GovTech landing page with product value, stats and calls to action.
+- `/submit` — citizen issue submission with photo upload, phone camera capture, preview, district selection, geolocation, manual address and description.
+- `/analysis` — AI analysis result page with uploaded photo, detected issue, confidence, urgency, akimat relevance, social impact, budget, deadline, explanation and generated report.
+- `/dashboard` — akimat dashboard with KPI cards, readable Recharts charts, filters, issue table and priority queue.
+- `/map` — real Leaflet/OpenStreetMap risk map of Almaty with colored issue markers and popups.
+- `/admin/issues/[id]` — full issue details page for city staff.
 
-## Why It Helps
+## Why It Matters
 
-City services receive many reports, but not every issue has the same risk, cost or urgency. QalaVision AI makes reports structured and comparable:
+City services receive many reports, but dispatch teams need to know what should be fixed first. QalaVision AI helps by:
 
-- urgent road and safety risks rise to the top;
-- citizens can submit evidence from a phone camera;
-- akimate teams see budget impact before dispatch;
-- every score is explainable, not a black box;
-- the frontend works without backend services for hackathon demo, while the AI module can be replaced later.
+- structuring citizen reports into operational data;
+- prioritizing critical safety issues;
+- estimating repair budget before dispatch;
+- showing social impact and relevance for akimat decisions;
+- giving transparent scoring instead of black-box ranking;
+- preparing a workflow that can later connect to real computer vision or OpenAI API.
 
-## AI Scoring
+## AI-Ready Architecture
 
-Urgency is calculated with:
+The analysis module is isolated in:
+
+```txt
+lib/ai-analysis.ts
+```
+
+Main function:
+
+```ts
+analyzeIssue(image, formData)
+```
+
+Input:
+
+- image file
+- district
+- geolocation
+- manual address
+- citizen description
+- selected fallback problem type
+
+Output:
+
+- `detectedProblem`
+- `confidence`
+- `urgencyScore`
+- `akimatRelevanceScore`
+- `socialImpactScore`
+- `estimatedRepairCostKZT`
+- `repairDeadline`
+- `aiGeneratedDescription`
+- `fullReportForAkimat`
+- `explanation`
+- `repairRecommendation`
+
+To connect a real model later, replace the internal implementation of `analyzeIssue()` with:
+
+- OpenAI API vision/text analysis;
+- custom computer vision API;
+- YOLO object detection endpoint;
+- municipal data service.
+
+The UI and dashboard do not need to be rewritten.
+
+## Scoring Methodology
+
+Urgency score:
 
 ```txt
 urgencyScore =
 problemSeverity * 0.4 +
 locationRisk * 0.25 +
-citizenImpact * 0.2 +
+socialImpactScore * 0.2 +
 photoConfidence * 0.15
 ```
 
-Akimate relevance also considers urgency, similar complaints in the district, risk to people and proximity to schools, hospitals or important roads.
+Where:
 
-Repair cost mock formula:
+- `problemSeverity` — base hazard of the detected issue category.
+- `locationRisk` — district risk, road load and proximity to public infrastructure.
+- `socialImpactScore` — expected effect on pedestrians, drivers, schools, hospitals and vulnerable groups.
+- `photoConfidence` — stronger when photo evidence is attached.
+
+Akimat relevance also considers:
+
+- urgency;
+- similar complaints in the district;
+- risk to people;
+- proximity to schools, hospitals and roads;
+- district context.
+
+Repair cost rules:
 
 - pothole: 7000 KZT per m2
 - broken sidewalk: 12000 KZT per m2
@@ -46,42 +107,16 @@ Repair cost mock formula:
 - flooding: 80000 KZT fixed
 - damaged sign: 35000 KZT fixed
 
-## Tech Stack
+Deadline rules:
 
-- Next.js 14
-- TypeScript
-- Tailwind CSS
-- Framer Motion
-- Recharts
-- Lucide React
+- Critical: 24 hours
+- High: 3 days
+- Medium: 7 days
+- Low: 30 days
 
-## Run Locally
+## Data
 
-```bash
-npm install
-npm run dev
-```
-
-Open:
-
-```txt
-http://localhost:3000
-```
-
-## Project Structure
-
-```txt
-app/                    Next.js app router files
-components/             UI sections and reusable components
-lib/ai-analysis.ts      AI-ready mock analysis module
-lib/mock-data.ts        12 demo issues for Almaty districts
-lib/i18n.ts             EN / RU / KZ interface copy
-public/images/          Generated hero visual asset
-```
-
-## Demo Data
-
-The project includes 12 mock submissions across Almaty districts:
+The project includes 12 demo issues across Almaty districts:
 
 - Алмалинский
 - Алатауский
@@ -92,4 +127,91 @@ The project includes 12 mock submissions across Almaty districts:
 - Наурызбайский
 - Турксибский
 
-All data works locally without a backend.
+New submissions are stored in browser `localStorage`, so the MVP works without a backend.
+
+## Tech Stack
+
+- Next.js 14
+- TypeScript
+- Tailwind CSS
+- Framer Motion
+- Recharts
+- Leaflet + OpenStreetMap
+- Manrope font via `@fontsource/manrope`
+- Lucide React icons
+
+## Run Locally
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Start development server:
+
+```bash
+npm run dev
+```
+
+Open:
+
+```txt
+http://localhost:3000
+```
+
+Production build:
+
+```bash
+npm run build
+npm run start
+```
+
+## Environment Variables For Future OpenAI Integration
+
+Do not put API keys into client components, `.env`, GitHub commits or browser code.
+
+For local development, create `.env.local`:
+
+```txt
+OPENAI_API_KEY=your_key_here
+```
+
+For Vercel, add the key only as a server-side environment variable in the project dashboard:
+
+```txt
+OPENAI_API_KEY
+```
+
+Use it only inside server code, for example:
+
+- Next.js Route Handler: `app/api/analyze/route.ts`
+- Server Action
+- backend API endpoint
+
+Never expose it with `NEXT_PUBLIC_`. Variables with that prefix are bundled into browser JavaScript.
+
+## Project Structure
+
+```txt
+app/                       Next.js routes
+app/submit                 Citizen submission page
+app/analysis               Analysis result page
+app/dashboard              Akimat dashboard
+app/map                    Leaflet/OpenStreetMap risk map
+app/admin/issues/[id]      Admin issue details
+components/                UI components and page content
+lib/ai-analysis.ts         AI-ready analysis module
+lib/demo-data.ts           Demo issues and issue creation helper
+lib/i18n.ts                EN / RU / KZ interface copy
+public/images/             Local visual assets
+```
+
+## Hackathon Criteria Coverage
+
+- Relevance: real urban safety and repair prioritization problem.
+- Innovation: AI prioritization, cost estimation, social impact and explainable scoring.
+- Technical: photo upload/camera capture, AI-ready module, map, dashboard and admin details.
+- Practicality: workflow is directly usable by akimat teams for triage.
+- Data/methodology: transparent scoring formula and repair cost rules.
+- Documentation: setup, architecture, methodology and deployment guidance are included here.

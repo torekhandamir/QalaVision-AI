@@ -20,8 +20,7 @@ export type ProblemType =
   | "damaged_sign";
 
 export type DeadlineLevel = "Critical" | "High" | "Medium" | "Low";
-
-export type IssueStatus = "new" | "triaged" | "scheduled" | "in_progress";
+export type IssueStatus = "pending" | "in_progress" | "completed";
 
 export type GeoPoint = {
   lat: number;
@@ -32,12 +31,14 @@ export type GeoPoint = {
 export type AnalyzeIssueFormData = {
   district: DistrictId;
   location: GeoPoint | null;
+  address: string;
   description: string;
   selectedProblemType: ProblemType;
   locale?: Locale;
 };
 
 export type AnalysisFactor = {
+  id: "problemSeverity" | "locationRisk" | "citizenImpact" | "photoConfidence";
   label: string;
   value: number;
   weight: number;
@@ -48,14 +49,19 @@ export type AIAnalysisResult = {
   detectedProblem: ProblemType;
   confidence: number;
   urgencyScore: number;
-  akimateRelevanceScore: number;
+  akimatRelevanceScore: number;
+  socialImpactScore: number;
   estimatedRepairCostKZT: number;
   repairDeadline: string;
   deadlineLevel: DeadlineLevel;
+  aiGeneratedDescription: string;
+  fullReportForAkimat: string;
   explanation: string;
-  generatedComplaintText: string;
+  repairRecommendation: string;
   factors: AnalysisFactor[];
   modelVersion: string;
+  akimateRelevanceScore: number;
+  generatedComplaintText: string;
 };
 
 export const districts: DistrictId[] = [
@@ -81,7 +87,7 @@ export const problemTypes: ProblemType[] = [
 
 export const districtLabels: Record<Locale, Record<DistrictId, string>> = {
   en: {
-    almaly: "Almalinsky",
+    almaly: "Almaly",
     alatau: "Alatau",
     auezov: "Auezov",
     bostandyk: "Bostandyk",
@@ -173,6 +179,16 @@ const severityByProblem: Record<ProblemType, number> = {
   damaged_sign: 52
 };
 
+const baseSocialImpact: Record<ProblemType, number> = {
+  pothole: 78,
+  broken_sidewalk: 74,
+  trash: 48,
+  broken_streetlight: 67,
+  road_crack: 62,
+  flooding: 87,
+  damaged_sign: 59
+};
+
 const repairCostKZT: Record<
   ProblemType,
   { mode: "area"; rate: number } | { mode: "fixed"; rate: number }
@@ -200,7 +216,7 @@ const districtRisk: Record<
     similarComplaints: 10,
     proximityRisk: 82,
     context: {
-      en: "central streets with high pedestrian and transit load",
+      en: "central streets with heavy pedestrian, transit and business traffic",
       ru: "центральные улицы с высоким пешеходным и транспортным потоком",
       kz: "жаяу жүргінші және көлік ағыны жоғары орталық көшелер"
     }
@@ -210,7 +226,7 @@ const districtRisk: Record<
     similarComplaints: 7,
     proximityRisk: 72,
     context: {
-      en: "fast-growing residential areas and arterial roads",
+      en: "fast-growing residential blocks and arterial roads",
       ru: "быстро растущие жилые кварталы и магистральные дороги",
       kz: "қарқынды өсіп жатқан тұрғын аудандар және магистральдар"
     }
@@ -220,7 +236,7 @@ const districtRisk: Record<
     similarComplaints: 9,
     proximityRisk: 76,
     context: {
-      en: "dense residential blocks near schools and public transport",
+      en: "dense residential areas near schools and public transport",
       ru: "плотные жилые кварталы рядом со школами и общественным транспортом",
       kz: "мектептер мен қоғамдық көлікке жақын тығыз тұрғын кварталдар"
     }
@@ -230,9 +246,9 @@ const districtRisk: Record<
     similarComplaints: 8,
     proximityRisk: 79,
     context: {
-      en: "mixed education, hospital and commuter corridors",
-      ru: "районы с учебными, медицинскими и транспортными коридорами",
-      kz: "оқу, медицина және көлік дәліздері аралас аймақтар"
+      en: "education, hospital and commuter corridors",
+      ru: "учебные, медицинские и транспортные коридоры",
+      kz: "оқу, медицина және көлік дәліздері"
     }
   },
   zhetysu: {
@@ -291,8 +307,7 @@ function hashString(value: string) {
 }
 
 function deterministicRange(seed: string, min: number, max: number) {
-  const hash = hashString(seed);
-  return min + (hash % (max - min + 1));
+  return min + (hashString(seed) % (max - min + 1));
 }
 
 function detectFromDescription(
@@ -310,32 +325,23 @@ function detectFromDescription(
     ["pothole", ["pothole", "яма", "шұңқыр"]]
   ];
 
-  const matched = keywordMap.find(([, words]) =>
-    words.some((word) => normalized.includes(word))
+  return (
+    keywordMap.find(([, words]) =>
+      words.some((word) => normalized.includes(word))
+    )?.[0] ?? selectedProblemType
   );
-
-  return matched?.[0] ?? selectedProblemType;
 }
 
-function citizenImpactScore(problem: ProblemType, description: string) {
-  const detailBoost = Math.min(18, description.trim().length / 5);
-  const baseImpact: Record<ProblemType, number> = {
-    pothole: 78,
-    broken_sidewalk: 72,
-    trash: 46,
-    broken_streetlight: 66,
-    road_crack: 63,
-    flooding: 86,
-    damaged_sign: 58
-  };
+function calculateSocialImpact(problem: ProblemType, description: string) {
+  const detailBoost = Math.min(14, Math.floor(description.trim().length / 12));
+  const vulnerableBoost =
+    /school|hospital|children|elderly|traffic|bus|crossing|школ|больниц|дет|пожил|трафик|автобус|переход|мектеп|аурухана|бала|қарт|көлік|өткел/i.test(
+      description
+    )
+      ? 12
+      : 0;
 
-  const vulnerableBoost = /school|hospital|children|elderly|traffic|школ|больниц|дет|пожил|трафик|мектеп|аурухана|бала|қарт|көлік/i.test(
-    description
-  )
-    ? 10
-    : 0;
-
-  return clamp(baseImpact[problem] + detailBoost + vulnerableBoost);
+  return clamp(baseSocialImpact[problem] + detailBoost + vulnerableBoost);
 }
 
 function deadlineFromUrgency(score: number): DeadlineLevel {
@@ -354,7 +360,137 @@ function repairEstimate(problem: ProblemType, urgencyScore: number, seed: string
   const estimatedAreaM2 =
     Math.round((1.2 + urgencyScore / 18 + deterministicRange(seed, 0, 22) / 10) * 10) /
     10;
+
   return Math.round((estimatedAreaM2 * cost.rate) / 1000) * 1000;
+}
+
+function buildFactors(
+  locale: Locale,
+  problemSeverity: number,
+  locationRisk: number,
+  socialImpact: number,
+  photoConfidence: number
+): AnalysisFactor[] {
+  const text = {
+    en: {
+      severity: "Problem severity",
+      location: "Location risk",
+      impact: "Social impact",
+      photo: "Photo confidence",
+      severityDesc: "Base hazard level for the detected category.",
+      locationDesc: "District risk, road load and proximity to public services.",
+      impactDesc: "Expected effect on pedestrians, drivers and vulnerable groups.",
+      photoDesc: "Evidence quality from the uploaded or captured image."
+    },
+    ru: {
+      severity: "Серьезность проблемы",
+      location: "Риск локации",
+      impact: "Социальное влияние",
+      photo: "Уверенность по фото",
+      severityDesc: "Базовый уровень опасности для найденной категории.",
+      locationDesc: "Риск района, нагрузка дорог и близость городских объектов.",
+      impactDesc: "Ожидаемое влияние на пешеходов, водителей и уязвимые группы.",
+      photoDesc: "Качество доказательства из загруженного или снятого фото."
+    },
+    kz: {
+      severity: "Мәселе ауырлығы",
+      location: "Локация тәуекелі",
+      impact: "Әлеуметтік әсер",
+      photo: "Фото сенімділігі",
+      severityDesc: "Анықталған санаттың базалық қауіптілік деңгейі.",
+      locationDesc: "Аудан тәуекелі, жол жүктемесі және қалалық нысандарға жақындық.",
+      impactDesc: "Жаяу жүргінші, жүргізуші және осал топтарға ықпал.",
+      photoDesc: "Жүктелген немесе түсірілген фото дәлелінің сапасы."
+    }
+  }[locale];
+
+  return [
+    {
+      id: "problemSeverity",
+      label: text.severity,
+      value: problemSeverity,
+      weight: 0.4,
+      description: text.severityDesc
+    },
+    {
+      id: "locationRisk",
+      label: text.location,
+      value: locationRisk,
+      weight: 0.25,
+      description: text.locationDesc
+    },
+    {
+      id: "citizenImpact",
+      label: text.impact,
+      value: socialImpact,
+      weight: 0.2,
+      description: text.impactDesc
+    },
+    {
+      id: "photoConfidence",
+      label: text.photo,
+      value: photoConfidence,
+      weight: 0.15,
+      description: text.photoDesc
+    }
+  ];
+}
+
+function buildGeneratedDescription(
+  locale: Locale,
+  problem: ProblemType,
+  district: DistrictId,
+  urgencyScore: number,
+  address: string
+) {
+  const problemLabel = problemLabels[locale][problem];
+  const districtLabel = districtLabels[locale][district];
+  const place = address.trim() || districtLabel;
+
+  if (locale === "ru") {
+    return `Система определила проблему "${problemLabel}" в районе ${districtLabel}. Локация: ${place}. Инцидент требует приоритизации с уровнем срочности ${urgencyScore}/100.`;
+  }
+
+  if (locale === "kz") {
+    return `Жүйе ${districtLabel} ауданында "${problemLabel}" мәселесін анықтады. Орналасуы: ${place}. Оқиға ${urgencyScore}/100 шұғылдықпен басымдыққа қойылуы керек.`;
+  }
+
+  return `The system detected "${problemLabel}" in ${districtLabel}. Location: ${place}. The incident should be prioritized with urgency ${urgencyScore}/100.`;
+}
+
+function buildRepairRecommendation(locale: Locale, problem: ProblemType, level: DeadlineLevel) {
+  const deadline = deadlineText[locale][level];
+  const action: Record<Locale, Record<ProblemType, string>> = {
+    en: {
+      pothole: "Dispatch a road repair crew, secure the lane and patch the damaged asphalt area.",
+      broken_sidewalk: "Send a sidewalk maintenance team, isolate the unsafe segment and replace surface slabs.",
+      trash: "Assign sanitation crew for removal, cleaning and follow-up container inspection.",
+      broken_streetlight: "Route to electrical maintenance, inspect wiring and replace the lamp unit.",
+      road_crack: "Inspect crack depth, seal damaged asphalt and monitor recurring deformation.",
+      flooding: "Send drainage team, clear inlets and check stormwater flow capacity.",
+      damaged_sign: "Replace or reinstall the road sign and verify visibility from traffic lanes."
+    },
+    ru: {
+      pothole: "Направить дорожную бригаду, оградить участок и выполнить ямочный ремонт.",
+      broken_sidewalk: "Направить бригаду по тротуарам, изолировать опасный сегмент и заменить покрытие.",
+      trash: "Назначить санитарную бригаду для вывоза, уборки и проверки контейнерной зоны.",
+      broken_streetlight: "Передать электрикам, проверить проводку и заменить световой модуль.",
+      road_crack: "Проверить глубину трещины, герметизировать асфальт и отслеживать деформацию.",
+      flooding: "Направить дренажную службу, очистить ливневки и проверить пропускную способность.",
+      damaged_sign: "Заменить или переустановить знак и проверить видимость с полос движения."
+    },
+    kz: {
+      pothole: "Жол жөндеу бригадасын жіберіп, учаскені қоршап, асфальтты жамау.",
+      broken_sidewalk: "Тротуар бригадасын жіберіп, қауіпті бөлікті оқшаулап, жабындыны ауыстыру.",
+      trash: "Қоқысты шығару, аумақты тазалау және контейнер аймағын тексеру.",
+      broken_streetlight: "Электр қызметіне жіберіп, сымды тексеріп, шам модулін ауыстыру.",
+      road_crack: "Жарық тереңдігін тексеріп, асфальтты герметизациялау және деформацияны бақылау.",
+      flooding: "Дренаж қызметін жіберіп, нөсер су қабылдағыштарын тазалау.",
+      damaged_sign: "Жол белгісін ауыстыру немесе қайта орнату және көрінуін тексеру."
+    }
+  };
+
+  return `${action[locale][problem]} ${locale === "ru" ? "Рекомендуемый срок:" : locale === "kz" ? "Ұсынылатын мерзім:" : "Recommended deadline:"} ${deadline}.`;
 }
 
 function buildExplanation(
@@ -363,150 +499,75 @@ function buildExplanation(
   district: DistrictId,
   urgencyScore: number,
   relevanceScore: number,
+  socialImpactScore: number,
   factors: AnalysisFactor[],
   confidence: number
 ) {
   const problemLabel = problemLabels[locale][problem];
   const districtLabel = districtLabels[locale][district];
-  const riskContext = districtRisk[district].context[locale];
   const factorLine = factors
     .map((factor) => `${factor.label}: ${factor.value}/100`)
     .join(", ");
+  const context = districtRisk[district].context[locale];
 
   if (locale === "ru") {
-    return `AI определил проблему как "${problemLabel}" с уверенностью ${confidence}%. Срочность ${urgencyScore}/100 рассчитана по прозрачной формуле: ${factorLine}. Релевантность для акимата ${relevanceScore}/100 выше из-за контекста района ${districtLabel}: ${riskContext}, похожих обращений и близости к важной инфраструктуре.`;
+    return `AI определил проблему как "${problemLabel}" с уверенностью ${confidence}%. Срочность ${urgencyScore}/100 рассчитана по прозрачной формуле: ${factorLine}. Релевантность для акимата ${relevanceScore}/100 учитывает срочность, похожие обращения в районе ${districtLabel}, риск для людей и контекст локации: ${context}. Социальное влияние оценено в ${socialImpactScore}/100.`;
   }
 
   if (locale === "kz") {
-    return `AI мәселені "${problemLabel}" деп анықтады, сенімділік ${confidence}%. Шұғылдық ${urgencyScore}/100 ашық формуламен есептелді: ${factorLine}. Әкімдік үшін релеванттылық ${relevanceScore}/100, себебі ${districtLabel} ауданында ${riskContext}, ұқсас өтініштер және маңызды инфрақұрылымға жақындық ескерілді.`;
+    return `AI мәселені "${problemLabel}" деп анықтады, сенімділік ${confidence}%. Шұғылдық ${urgencyScore}/100 ашық формуламен есептелді: ${factorLine}. Әкімдік үшін релеванттылық ${relevanceScore}/100 шұғылдықты, ${districtLabel} ауданындағы ұқсас өтініштерді, адамдарға қауіп пен локация контекстін ескереді: ${context}. Әлеуметтік әсер ${socialImpactScore}/100.`;
   }
 
-  return `AI detected "${problemLabel}" with ${confidence}% confidence. Urgency ${urgencyScore}/100 is calculated with the transparent factor formula: ${factorLine}. Akimate relevance ${relevanceScore}/100 is increased by the ${districtLabel} context: ${riskContext}, similar district complaints and proximity to critical infrastructure.`;
+  return `AI detected "${problemLabel}" with ${confidence}% confidence. Urgency ${urgencyScore}/100 uses the transparent formula: ${factorLine}. Akimat relevance ${relevanceScore}/100 considers urgency, similar complaints in ${districtLabel}, risk to people and location context: ${context}. Social impact is ${socialImpactScore}/100.`;
 }
 
-function buildComplaint(
+function buildFullReport(
   locale: Locale,
-  district: DistrictId,
+  formData: AnalyzeIssueFormData,
   problem: ProblemType,
   urgencyScore: number,
   relevanceScore: number,
+  socialImpactScore: number,
   cost: number,
   deadline: string,
-  description: string,
-  location: GeoPoint | null
+  recommendation: string
 ) {
-  const districtLabel = districtLabels[locale][district];
+  const districtLabel = districtLabels[locale][formData.district];
   const problemLabel = problemLabels[locale][problem];
-  const coordinates = location
-    ? `${location.lat.toFixed(5)}, ${location.lng.toFixed(5)}`
+  const coordinates = formData.location
+    ? `${formData.location.lat.toFixed(5)}, ${formData.location.lng.toFixed(5)}`
     : locale === "ru"
-      ? "координаты не предоставлены"
+      ? "не предоставлены"
       : locale === "kz"
-        ? "координаттар берілмеген"
-        : "coordinates not provided";
+        ? "берілмеген"
+        : "not provided";
+  const address = formData.address.trim() || (locale === "ru" ? "не указан" : locale === "kz" ? "көрсетілмеген" : "not provided");
+  const costText = cost.toLocaleString(locale === "en" ? "en-US" : "ru-RU");
 
   if (locale === "ru") {
-    return `Уважаемый акимат Алматы, просим рассмотреть городскую проблему: ${problemLabel}. Район: ${districtLabel}. Координаты: ${coordinates}. Срочность: ${urgencyScore}/100, релевантность для акимата: ${relevanceScore}/100. Ориентировочная стоимость ремонта: ${cost.toLocaleString("ru-RU")} KZT. Рекомендуемый срок: ${deadline}. Описание жителя: ${description || "без дополнительного описания"}.`;
+    return `Отчет для акимата Алматы. Категория: ${problemLabel}. Район: ${districtLabel}. Адрес: ${address}. Координаты: ${coordinates}. Срочность: ${urgencyScore}/100. Релевантность для акимата: ${relevanceScore}/100. Социальное влияние: ${socialImpactScore}/100. Оценочный бюджет ремонта: ${costText} KZT. Рекомендуемый срок: ${deadline}. Описание жителя: ${formData.description || "без дополнительного описания"}. Рекомендация: ${recommendation}`;
   }
 
   if (locale === "kz") {
-    return `Құрметті Алматы әкімдігі, қалалық мәселені қарастыруыңызды сұраймыз: ${problemLabel}. Аудан: ${districtLabel}. Координаттар: ${coordinates}. Шұғылдық: ${urgencyScore}/100, әкімдік үшін релеванттылық: ${relevanceScore}/100. Жөндеудің шамамен құны: ${cost.toLocaleString("ru-RU")} KZT. Ұсынылатын мерзім: ${deadline}. Тұрғын сипаттамасы: ${description || "қосымша сипаттама жоқ"}.`;
+    return `Алматы әкімдігіне есеп. Санат: ${problemLabel}. Аудан: ${districtLabel}. Мекенжай: ${address}. Координаттар: ${coordinates}. Шұғылдық: ${urgencyScore}/100. Әкімдікке релеванттылық: ${relevanceScore}/100. Әлеуметтік әсер: ${socialImpactScore}/100. Жөндеу бюджеті: ${costText} KZT. Ұсынылатын мерзім: ${deadline}. Тұрғын сипаттамасы: ${formData.description || "қосымша сипаттама жоқ"}. Ұсыныс: ${recommendation}`;
   }
 
-  return `Dear Almaty Akimate, please review the following urban issue: ${problemLabel}. District: ${districtLabel}. Coordinates: ${coordinates}. Urgency: ${urgencyScore}/100, akimate relevance: ${relevanceScore}/100. Estimated repair cost: ${cost.toLocaleString("en-US")} KZT. Recommended deadline: ${deadline}. Citizen description: ${description || "no additional description"}.`;
-}
-
-function buildFactors(
-  locale: Locale,
-  problemSeverity: number,
-  locationRisk: number,
-  citizenImpact: number,
-  photoConfidence: number
-): AnalysisFactor[] {
-  const labels = {
-    en: {
-      severity: "Problem severity",
-      location: "Location risk",
-      impact: "Citizen impact",
-      photo: "Photo confidence"
-    },
-    ru: {
-      severity: "Серьезность проблемы",
-      location: "Риск локации",
-      impact: "Влияние на жителей",
-      photo: "Уверенность по фото"
-    },
-    kz: {
-      severity: "Мәселе ауырлығы",
-      location: "Локация тәуекелі",
-      impact: "Тұрғындарға әсері",
-      photo: "Фото сенімділігі"
-    }
-  }[locale];
-
-  const descriptions = {
-    en: {
-      severity: "Base hazard level for the detected category.",
-      location: "District profile, road load and nearby public facilities.",
-      impact: "Expected effect on pedestrians, drivers and vulnerable groups.",
-      photo: "Signal quality from the uploaded or captured image."
-    },
-    ru: {
-      severity: "Базовый уровень опасности для найденной категории.",
-      location: "Профиль района, нагрузка дорог и близость городских объектов.",
-      impact: "Ожидаемое влияние на пешеходов, водителей и уязвимые группы.",
-      photo: "Качество сигнала из загруженного или снятого фото."
-    },
-    kz: {
-      severity: "Анықталған санаттың базалық қауіптілік деңгейі.",
-      location: "Аудан профилі, жол жүктемесі және қалалық нысандарға жақындық.",
-      impact: "Жаяу жүргінші, жүргізуші және осал топтарға ықпал.",
-      photo: "Жүктелген немесе түсірілген фотодан алынған сигнал сапасы."
-    }
-  }[locale];
-
-  return [
-    {
-      label: labels.severity,
-      value: problemSeverity,
-      weight: 0.4,
-      description: descriptions.severity
-    },
-    {
-      label: labels.location,
-      value: locationRisk,
-      weight: 0.25,
-      description: descriptions.location
-    },
-    {
-      label: labels.impact,
-      value: citizenImpact,
-      weight: 0.2,
-      description: descriptions.impact
-    },
-    {
-      label: labels.photo,
-      value: photoConfidence,
-      weight: 0.15,
-      description: descriptions.photo
-    }
-  ];
+  return `Report for Almaty Akimat. Category: ${problemLabel}. District: ${districtLabel}. Address: ${address}. Coordinates: ${coordinates}. Urgency: ${urgencyScore}/100. Akimat relevance: ${relevanceScore}/100. Social impact: ${socialImpactScore}/100. Estimated repair budget: ${costText} KZT. Recommended deadline: ${deadline}. Citizen description: ${formData.description || "no additional description"}. Recommendation: ${recommendation}`;
 }
 
 export async function analyzeIssue(
   image: File | null,
   formData: AnalyzeIssueFormData
 ): Promise<AIAnalysisResult> {
-  // Swap this implementation for an OpenAI API, YOLO endpoint or custom CV model later.
-  return mockAnalyzeIssue(image, formData);
+  return runLocalRiskAnalysis(image, formData);
 }
 
-export async function mockAnalyzeIssue(
+async function runLocalRiskAnalysis(
   image: File | null,
   formData: AnalyzeIssueFormData
 ): Promise<AIAnalysisResult> {
   const locale = formData.locale ?? "en";
-  const seed = `${formData.district}-${formData.selectedProblemType}-${formData.description}-${image?.name ?? "no-image"}-${image?.size ?? 0}`;
+  const seed = `${formData.district}-${formData.selectedProblemType}-${formData.address}-${formData.description}-${image?.name ?? "no-image"}-${image?.size ?? 0}`;
   const detectedProblem = detectFromDescription(
     formData.description,
     formData.selectedProblemType
@@ -516,7 +577,10 @@ export async function mockAnalyzeIssue(
   const locationRisk = clamp(
     districtProfile.locationRisk + deterministicRange(seed, -4, 6)
   );
-  const citizenImpact = citizenImpactScore(detectedProblem, formData.description);
+  const socialImpactScore = calculateSocialImpact(
+    detectedProblem,
+    formData.description
+  );
   const photoConfidence = image
     ? clamp(82 + deterministicRange(seed, 0, 14))
     : clamp(58 + deterministicRange(seed, 0, 16));
@@ -527,13 +591,15 @@ export async function mockAnalyzeIssue(
   const urgencyScore = Math.round(
     problemSeverity * 0.4 +
       locationRisk * 0.25 +
-      citizenImpact * 0.2 +
+      socialImpactScore * 0.2 +
       photoConfidence * 0.15
   );
 
   const similarComplaintsScore = clamp(districtProfile.similarComplaints * 9);
-  const peopleRisk = clamp((problemSeverity + citizenImpact) / 2 + deterministicRange(seed, -3, 5));
-  const akimateRelevanceScore = Math.round(
+  const peopleRisk = clamp(
+    (problemSeverity + socialImpactScore) / 2 + deterministicRange(seed, -3, 5)
+  );
+  const akimatRelevanceScore = Math.round(
     urgencyScore * 0.42 +
       similarComplaintsScore * 0.18 +
       peopleRisk * 0.18 +
@@ -551,39 +617,59 @@ export async function mockAnalyzeIssue(
     locale,
     problemSeverity,
     locationRisk,
-    citizenImpact,
+    socialImpactScore,
     photoConfidence
+  );
+  const aiGeneratedDescription = buildGeneratedDescription(
+    locale,
+    detectedProblem,
+    formData.district,
+    urgencyScore,
+    formData.address
+  );
+  const repairRecommendation = buildRepairRecommendation(
+    locale,
+    detectedProblem,
+    deadlineLevel
+  );
+  const explanation = buildExplanation(
+    locale,
+    detectedProblem,
+    formData.district,
+    urgencyScore,
+    akimatRelevanceScore,
+    socialImpactScore,
+    factors,
+    confidence
+  );
+  const fullReportForAkimat = buildFullReport(
+    locale,
+    formData,
+    detectedProblem,
+    urgencyScore,
+    akimatRelevanceScore,
+    socialImpactScore,
+    estimatedRepairCostKZT,
+    repairDeadline,
+    repairRecommendation
   );
 
   return {
     detectedProblem,
     confidence,
     urgencyScore,
-    akimateRelevanceScore,
+    akimatRelevanceScore,
+    akimateRelevanceScore: akimatRelevanceScore,
+    socialImpactScore,
     estimatedRepairCostKZT,
     repairDeadline,
     deadlineLevel,
+    aiGeneratedDescription,
+    fullReportForAkimat,
+    generatedComplaintText: fullReportForAkimat,
+    explanation,
+    repairRecommendation,
     factors,
-    explanation: buildExplanation(
-      locale,
-      detectedProblem,
-      formData.district,
-      urgencyScore,
-      akimateRelevanceScore,
-      factors,
-      confidence
-    ),
-    generatedComplaintText: buildComplaint(
-      locale,
-      formData.district,
-      detectedProblem,
-      urgencyScore,
-      akimateRelevanceScore,
-      estimatedRepairCostKZT,
-      repairDeadline,
-      formData.description,
-      formData.location
-    ),
-    modelVersion: "mock-cv-risk-model-v0.1"
+    modelVersion: "QalaVision Risk Engine v0.2"
   };
 }

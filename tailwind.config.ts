@@ -28,7 +28,7 @@ const config: Config = {
           "radial-gradient(circle at 20% 20%, rgba(101,227,255,0.18), transparent 32%), radial-gradient(circle at 80% 10%, rgba(114,246,184,0.13), transparent 28%), linear-gradient(135deg, rgba(7,16,18,0.98), rgba(13,28,30,0.94))"
       },
       fontFamily: {
-        sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"]
+        sans: ["Manrope", "Geist", "ui-sans-serif", "system-ui", "sans-serif"]
       }
     }
   },

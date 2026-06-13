@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
   AlertTriangle,
@@ -7,15 +8,14 @@ import {
   CheckCircle2,
   Filter,
   Layers3,
-  MapPinned,
   TrendingUp
 } from "lucide-react";
-import { motion } from "framer-motion";
 import {
   Bar,
   BarChart,
   CartesianGrid,
   Cell,
+  Legend,
   Pie,
   PieChart,
   ResponsiveContainer,
@@ -32,10 +32,10 @@ import {
   type DeadlineLevel,
   type DistrictId
 } from "@/lib/ai-analysis";
-import { statusLabels } from "@/lib/i18n";
 import { formatKZT } from "@/lib/format";
+import { statusLabels } from "@/lib/i18n";
+import type { IssueRecord } from "@/lib/demo-data";
 import { cn } from "@/lib/utils";
-import type { IssueRecord } from "@/lib/mock-data";
 import { AnimatedNumber } from "./animated-number";
 import { useLanguage } from "./language-provider";
 import { Reveal } from "./reveal";
@@ -45,7 +45,7 @@ type DashboardSectionProps = {
 };
 
 const urgencyOrder: DeadlineLevel[] = ["Critical", "High", "Medium", "Low"];
-const chartColors = ["#65e3ff", "#ff8d7a", "#f8d36b", "#72f6b8", "#9b8cff"];
+const chartColors = ["#ef4444", "#fb923c", "#facc15", "#22c55e", "#38bdf8"];
 
 export function DashboardSection({ issues }: DashboardSectionProps) {
   const { t, locale } = useLanguage();
@@ -107,82 +107,60 @@ export function DashboardSection({ issues }: DashboardSectionProps) {
   const priorityQueue = [...filteredIssues]
     .sort(
       (a, b) =>
-        b.urgencyScore + b.akimateRelevanceScore -
-        (a.urgencyScore + a.akimateRelevanceScore)
+        b.urgencyScore +
+        b.akimatRelevanceScore +
+        b.socialImpactScore -
+        (a.urgencyScore + a.akimatRelevanceScore + a.socialImpactScore)
     )
-    .slice(0, 5);
+    .slice(0, 6);
 
   const numberLocale = locale === "en" ? "en-US" : "ru-RU";
 
   return (
-    <section
-      id="dashboard"
-      className="relative overflow-hidden bg-ink px-4 py-24 text-white"
-    >
-      <div className="absolute inset-0 bg-radial-grid" />
-      <div className="grid-mask absolute inset-0 opacity-40" />
-
+    <main className="min-h-screen bg-ink px-4 pb-20 pt-32 text-white">
+      <div className="absolute inset-0 -z-0 bg-radial-grid" />
       <div className="relative mx-auto max-w-7xl">
         <Reveal>
           <div className="flex flex-col justify-between gap-7 lg:flex-row lg:items-end">
             <div className="max-w-3xl">
-              <p className="text-sm font-black uppercase tracking-[0.22em] text-white/42">
+              <p className="text-sm font-extrabold uppercase tracking-[0.22em] text-white/42">
                 {t.sections.dashboardKicker}
               </p>
-              <h2 className="mt-4 text-balance text-4xl font-black leading-tight sm:text-6xl">
+              <h1 className="mt-4 text-balance text-4xl font-extrabold leading-tight sm:text-5xl">
                 {t.sections.dashboardTitle}
-              </h2>
+              </h1>
               <p className="mt-5 text-lg leading-8 text-white/62">
                 {t.sections.dashboardSubtitle}
               </p>
             </div>
 
             <div className="glass flex flex-col gap-3 rounded-3xl p-4 sm:flex-row">
-              <label className="min-w-48">
-                <span className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-[0.16em] text-white/45">
-                  <Filter className="size-3" />
-                  {t.dashboard.districtFilter}
-                </span>
-                <select
-                  value={districtFilter}
-                  onChange={(event) =>
-                    setDistrictFilter(event.target.value as "all" | DistrictId)
-                  }
-                  className="h-12 w-full rounded-2xl border border-white/12 bg-white/10 px-3 text-sm font-bold text-white outline-none focus:border-civic-cyan/60"
-                >
-                  <option className="text-ink" value="all">
-                    {t.dashboard.allDistricts}
-                  </option>
-                  {districts.map((district) => (
-                    <option className="text-ink" key={district} value={district}>
-                      {districtLabels[locale][district]}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="min-w-44">
-                <span className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-[0.16em] text-white/45">
-                  <TrendingUp className="size-3" />
-                  {t.dashboard.urgencyFilter}
-                </span>
-                <select
-                  value={urgencyFilter}
-                  onChange={(event) =>
-                    setUrgencyFilter(event.target.value as "all" | DeadlineLevel)
-                  }
-                  className="h-12 w-full rounded-2xl border border-white/12 bg-white/10 px-3 text-sm font-bold text-white outline-none focus:border-civic-cyan/60"
-                >
-                  <option className="text-ink" value="all">
-                    {t.dashboard.allUrgency}
-                  </option>
-                  {urgencyOrder.map((level) => (
-                    <option className="text-ink" key={level} value={level}>
-                      {dashboardUrgencyLabel(t.dashboard, level)}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <FilterSelect
+                label={t.dashboard.districtFilter}
+                value={districtFilter}
+                onChange={(value) => setDistrictFilter(value as "all" | DistrictId)}
+                options={[
+                  { value: "all", label: t.dashboard.allDistricts },
+                  ...districts.map((district) => ({
+                    value: district,
+                    label: districtLabels[locale][district]
+                  }))
+                ]}
+              />
+              <FilterSelect
+                label={t.dashboard.urgencyFilter}
+                value={urgencyFilter}
+                onChange={(value) =>
+                  setUrgencyFilter(value as "all" | DeadlineLevel)
+                }
+                options={[
+                  { value: "all", label: t.dashboard.allUrgency },
+                  ...urgencyOrder.map((level) => ({
+                    value: level,
+                    label: dashboardUrgencyLabel(t.dashboard, level)
+                  }))
+                ]}
+              />
             </div>
           </div>
         </Reveal>
@@ -194,7 +172,7 @@ export function DashboardSection({ issues }: DashboardSectionProps) {
             value={<AnimatedNumber value={metrics.total} locale={numberLocale} />}
           />
           <KpiCard
-            icon={<AlertTriangle className="size-6 text-civic-coral" />}
+            icon={<AlertTriangle className="size-6 text-red-400" />}
             label={t.dashboard.criticalIssues}
             value={<AnimatedNumber value={metrics.critical} locale={numberLocale} />}
           />
@@ -223,28 +201,19 @@ export function DashboardSection({ issues }: DashboardSectionProps) {
           />
         </div>
 
-        <div className="mt-6 grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+        <div className="mt-6 grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
           <Reveal delay={0.08}>
             <Panel title={t.dashboard.charts}>
               <div className="grid gap-5 lg:grid-cols-2">
                 <ChartBox title={t.dashboard.byDistrict}>
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={byDistrict}>
-                      <CartesianGrid stroke="rgba(255,255,255,0.08)" vertical={false} />
-                      <XAxis
-                        dataKey="name"
-                        tick={{ fill: "rgba(255,255,255,0.62)", fontSize: 11 }}
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <YAxis
-                        allowDecimals={false}
-                        tick={{ fill: "rgba(255,255,255,0.5)", fontSize: 11 }}
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
-                      <Bar dataKey="issues" radius={[10, 10, 2, 2]} fill="#65e3ff" />
+                    <BarChart data={byDistrict} margin={{ left: -10, right: 12 }}>
+                      <CartesianGrid stroke="rgba(255,255,255,0.12)" vertical={false} />
+                      <XAxis dataKey="name" tick={axisTick} axisLine={false} tickLine={false} />
+                      <YAxis allowDecimals={false} tick={axisTick} axisLine={false} tickLine={false} />
+                      <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "rgba(255,255,255,0.07)" }} />
+                      <Legend wrapperStyle={{ color: "#fff" }} />
+                      <Bar name={t.dashboard.totalIssues} dataKey="issues" radius={[8, 8, 2, 2]} fill="#38bdf8" />
                     </BarChart>
                   </ResponsiveContainer>
                 </ChartBox>
@@ -259,32 +228,26 @@ export function DashboardSection({ issues }: DashboardSectionProps) {
                         innerRadius={48}
                         outerRadius={82}
                         paddingAngle={3}
+                        label
                       >
                         {urgencyDistribution.map((entry, index) => (
-                          <Cell
-                            key={entry.name}
-                            fill={chartColors[index % chartColors.length]}
-                          />
+                          <Cell key={entry.name} fill={chartColors[index]} />
                         ))}
                       </Pie>
                       <Tooltip contentStyle={tooltipStyle} />
+                      <Legend wrapperStyle={{ color: "#fff", fontSize: 12 }} />
                     </PieChart>
                   </ResponsiveContainer>
                 </ChartBox>
 
                 <div className="lg:col-span-2">
-                  <ChartBox title={t.dashboard.budgetByCategory} wide>
+                  <ChartBox title={t.dashboard.budgetByCategory} tall>
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={budgetByCategory}>
-                        <CartesianGrid stroke="rgba(255,255,255,0.08)" vertical={false} />
-                        <XAxis
-                          dataKey="name"
-                          tick={{ fill: "rgba(255,255,255,0.62)", fontSize: 11 }}
-                          axisLine={false}
-                          tickLine={false}
-                        />
+                      <BarChart data={budgetByCategory} margin={{ left: 8, right: 12 }}>
+                        <CartesianGrid stroke="rgba(255,255,255,0.12)" vertical={false} />
+                        <XAxis dataKey="name" tick={axisTick} axisLine={false} tickLine={false} />
                         <YAxis
-                          tick={{ fill: "rgba(255,255,255,0.5)", fontSize: 11 }}
+                          tick={axisTick}
                           axisLine={false}
                           tickLine={false}
                           tickFormatter={(value) =>
@@ -296,14 +259,12 @@ export function DashboardSection({ issues }: DashboardSectionProps) {
                         <Tooltip
                           contentStyle={tooltipStyle}
                           formatter={(value) => formatKZT(Number(value), locale)}
-                          cursor={{ fill: "rgba(255,255,255,0.04)" }}
+                          cursor={{ fill: "rgba(255,255,255,0.07)" }}
                         />
-                        <Bar dataKey="budget" radius={[10, 10, 2, 2]}>
+                        <Legend wrapperStyle={{ color: "#fff" }} />
+                        <Bar name={t.dashboard.budget} dataKey="budget" radius={[8, 8, 2, 2]}>
                           {budgetByCategory.map((entry, index) => (
-                            <Cell
-                              key={entry.name}
-                              fill={chartColors[index % chartColors.length]}
-                            />
+                            <Cell key={entry.name} fill={chartColors[index % chartColors.length]} />
                           ))}
                         </Bar>
                       </BarChart>
@@ -315,31 +276,20 @@ export function DashboardSection({ issues }: DashboardSectionProps) {
           </Reveal>
 
           <Reveal delay={0.14}>
-            <Panel title={t.dashboard.map} icon={<MapPinned className="size-5" />}>
-              <RiskMap
-                issues={filteredIssues}
-                cityLabel={locale === "en" ? "Almaty" : "Алматы"}
-              />
-            </Panel>
-          </Reveal>
-        </div>
-
-        <div className="mt-6 grid gap-6 xl:grid-cols-[0.88fr_1.12fr]">
-          <Reveal delay={0.08}>
             <Panel title={t.dashboard.topIssues} icon={<CheckCircle2 className="size-5" />}>
               <div className="space-y-3">
                 {priorityQueue.map((issue, index) => (
-                  <motion.div
+                  <Link
                     key={issue.id}
-                    whileHover={{ x: 4 }}
-                    className="rounded-3xl border border-white/10 bg-white/7 p-4"
+                    href={`/admin/issues/${issue.id}`}
+                    className="block rounded-3xl border border-white/10 bg-white/7 p-4 transition hover:border-civic-cyan/50 hover:bg-white/10"
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div>
-                        <p className="text-xs font-black uppercase tracking-[0.16em] text-white/42">
+                        <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-white/42">
                           #{index + 1} · {issue.id}
                         </p>
-                        <p className="mt-2 text-lg font-black text-white">
+                        <p className="mt-2 text-lg font-extrabold text-white">
                           {problemLabels[locale][issue.detectedProblem]}
                         </p>
                         <p className="mt-1 text-sm text-white/54">
@@ -349,91 +299,110 @@ export function DashboardSection({ issues }: DashboardSectionProps) {
                       </div>
                       <span
                         className={cn(
-                          "rounded-full px-3 py-1 text-sm font-black",
+                          "rounded-full px-3 py-1 text-sm font-extrabold",
                           urgencyBadge(issue.deadlineLevel)
                         )}
                       >
                         {issue.urgencyScore}
                       </span>
                     </div>
-                  </motion.div>
+                  </Link>
                 ))}
               </div>
             </Panel>
           </Reveal>
-
-          <Reveal delay={0.14}>
-            <Panel title={t.dashboard.table}>
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[880px] border-separate border-spacing-y-2 text-left text-sm">
-                  <thead>
-                    <tr className="text-xs font-black uppercase tracking-[0.14em] text-white/38">
-                      <th className="px-3 py-2">{t.dashboard.issue}</th>
-                      <th className="px-3 py-2">{t.dashboard.area}</th>
-                      <th className="px-3 py-2">{t.result.detectedProblem}</th>
-                      <th className="px-3 py-2">{t.dashboard.urgency}</th>
-                      <th className="px-3 py-2">{t.dashboard.relevance}</th>
-                      <th className="px-3 py-2">{t.dashboard.budget}</th>
-                      <th className="px-3 py-2">{t.dashboard.deadline}</th>
-                      <th className="px-3 py-2">{t.dashboard.status}</th>
-                      <th className="px-3 py-2">{t.dashboard.photo}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredIssues.map((issue) => (
-                      <tr key={issue.id} className="rounded-2xl bg-white/7 text-white/76">
-                        <td className="rounded-l-2xl px-3 py-3 font-black text-white">
-                          {issue.id}
-                        </td>
-                        <td className="px-3 py-3">
-                          {districtLabels[locale][issue.district]}
-                        </td>
-                        <td className="px-3 py-3">
-                          {problemLabels[locale][issue.detectedProblem]}
-                        </td>
-                        <td className="px-3 py-3">
-                          <span
-                            className={cn(
-                              "rounded-full px-2.5 py-1 text-xs font-black",
-                              urgencyBadge(issue.deadlineLevel)
-                            )}
-                          >
-                            {issue.urgencyScore}
-                          </span>
-                        </td>
-                        <td className="px-3 py-3">{issue.akimateRelevanceScore}</td>
-                        <td className="px-3 py-3">
-                          {formatKZT(issue.estimatedRepairCostKZT, locale)}
-                        </td>
-                        <td className="px-3 py-3">
-                          {deadlineText[locale][issue.deadlineLevel]}
-                        </td>
-                        <td className="px-3 py-3">
-                          {statusLabels[locale][issue.status]}
-                        </td>
-                        <td className="rounded-r-2xl px-3 py-3">
-                          {issue.hasPhoto ? t.misc.yes : t.misc.no}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </Panel>
-          </Reveal>
         </div>
+
+        <Reveal delay={0.12}>
+          <Panel title={t.dashboard.table}>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[960px] border-separate border-spacing-y-2 text-left text-sm">
+                <thead>
+                  <tr className="text-xs font-extrabold uppercase tracking-[0.14em] text-white/42">
+                    <th className="px-3 py-2">{t.dashboard.issue}</th>
+                    <th className="px-3 py-2">{t.dashboard.area}</th>
+                    <th className="px-3 py-2">{t.result.detectedProblem}</th>
+                    <th className="px-3 py-2">{t.dashboard.urgency}</th>
+                    <th className="px-3 py-2">{t.dashboard.relevance}</th>
+                    <th className="px-3 py-2">{t.dashboard.socialImpact}</th>
+                    <th className="px-3 py-2">{t.dashboard.budget}</th>
+                    <th className="px-3 py-2">{t.dashboard.deadline}</th>
+                    <th className="px-3 py-2">{t.dashboard.status}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredIssues.map((issue) => (
+                    <tr key={issue.id} className="rounded-2xl bg-white/8 text-white/78">
+                      <td className="rounded-l-2xl px-3 py-3 font-extrabold text-white">
+                        <Link href={`/admin/issues/${issue.id}`} className="hover:text-civic-cyan">
+                          {issue.id}
+                        </Link>
+                      </td>
+                      <td className="px-3 py-3">{districtLabels[locale][issue.district]}</td>
+                      <td className="px-3 py-3">{problemLabels[locale][issue.detectedProblem]}</td>
+                      <td className="px-3 py-3">
+                        <span className={cn("rounded-full px-2.5 py-1 text-xs font-extrabold", urgencyBadge(issue.deadlineLevel))}>
+                          {issue.urgencyScore}
+                        </span>
+                      </td>
+                      <td className="px-3 py-3">{issue.akimatRelevanceScore}</td>
+                      <td className="px-3 py-3">{issue.socialImpactScore}</td>
+                      <td className="px-3 py-3">{formatKZT(issue.estimatedRepairCostKZT, locale)}</td>
+                      <td className="px-3 py-3">{deadlineText[locale][issue.deadlineLevel]}</td>
+                      <td className="rounded-r-2xl px-3 py-3">{statusLabels[locale][issue.status]}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Panel>
+        </Reveal>
       </div>
-    </section>
+    </main>
   );
 }
 
+const axisTick = { fill: "rgba(255,255,255,0.78)", fontSize: 11 };
+
 const tooltipStyle = {
-  background: "rgba(7,16,18,0.94)",
-  border: "1px solid rgba(255,255,255,0.12)",
-  borderRadius: "18px",
+  background: "rgba(7,16,18,0.96)",
+  border: "1px solid rgba(255,255,255,0.18)",
+  borderRadius: "14px",
   color: "#fff",
-  boxShadow: "0 20px 60px rgba(0,0,0,0.28)"
+  boxShadow: "0 20px 60px rgba(0,0,0,0.32)"
 };
+
+function FilterSelect({
+  label,
+  value,
+  onChange,
+  options
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: Array<{ value: string; label: string }>;
+}) {
+  return (
+    <label className="min-w-48">
+      <span className="mb-2 flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.16em] text-white/52">
+        <Filter className="size-3" />
+        {label}
+      </span>
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="h-12 w-full rounded-2xl border border-white/16 bg-white/12 px-3 text-sm font-bold text-white outline-none focus:border-civic-cyan/60"
+      >
+        {options.map((option) => (
+          <option className="text-ink" key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
 
 function KpiCard({
   icon,
@@ -448,19 +417,19 @@ function KpiCard({
 }) {
   return (
     <Reveal>
-      <motion.div whileHover={{ y: -5 }} className="glass rounded-3xl p-5">
+      <div className="rounded-3xl border border-white/14 bg-white/[0.09] p-5 shadow-glass backdrop-blur-xl">
         <div className="mb-5 flex items-center justify-between">
-          <span className="grid size-12 place-items-center rounded-2xl bg-white/10">
+          <span className="grid size-12 place-items-center rounded-2xl bg-white/12">
             {icon}
           </span>
           <span className="size-2 rounded-full bg-civic-mint shadow-[0_0_20px_rgba(114,246,184,0.85)]" />
         </div>
-        <p className="text-3xl font-black text-white">
+        <p className="text-3xl font-extrabold text-white">
           {value}
           {suffix}
         </p>
-        <p className="mt-2 text-sm font-semibold text-white/52">{label}</p>
-      </motion.div>
+        <p className="mt-2 text-sm font-semibold text-white/62">{label}</p>
+      </div>
     </Reveal>
   );
 }
@@ -475,14 +444,14 @@ function Panel({
   children: React.ReactNode;
 }) {
   return (
-    <div className="glass rounded-[2rem] p-5">
+    <div className="mt-6 rounded-[2rem] border border-white/14 bg-white/[0.08] p-5 shadow-glass backdrop-blur-xl">
       <div className="mb-5 flex items-center gap-3">
         {icon ? (
-          <span className="grid size-10 place-items-center rounded-2xl bg-white/10 text-civic-cyan">
+          <span className="grid size-10 place-items-center rounded-2xl bg-white/12 text-civic-cyan">
             {icon}
           </span>
         ) : null}
-        <h3 className="text-xl font-black text-white">{title}</h3>
+        <h2 className="text-xl font-extrabold text-white">{title}</h2>
       </div>
       {children}
     </div>
@@ -492,105 +461,35 @@ function Panel({
 function ChartBox({
   title,
   children,
-  wide = false
+  tall = false
 }: {
   title: string;
   children: React.ReactNode;
-  wide?: boolean;
+  tall?: boolean;
 }) {
   return (
     <div
       className={cn(
-        "rounded-3xl border border-white/10 bg-white/7 p-4",
-        wide ? "h-[320px]" : "h-[300px]"
+        "rounded-3xl border border-white/12 bg-ink/54 p-4",
+        tall ? "h-[360px]" : "h-[320px]"
       )}
     >
-      <p className="mb-4 text-sm font-black text-white/74">{title}</p>
+      <p className="mb-4 text-sm font-extrabold text-white/84">{title}</p>
       <div className="h-[calc(100%-2.2rem)]">{children}</div>
     </div>
   );
 }
 
-function RiskMap({
-  issues,
-  cityLabel
-}: {
-  issues: IssueRecord[];
-  cityLabel: string;
-}) {
-  return (
-    <div className="relative h-[430px] overflow-hidden rounded-3xl border border-white/10 bg-[linear-gradient(145deg,rgba(101,227,255,0.14),rgba(114,246,184,0.08),rgba(255,141,122,0.11))]">
-      <div className="absolute inset-0 opacity-60">
-        <span className="absolute left-[8%] top-[28%] h-px w-[85%] rotate-[-12deg] bg-white/24" />
-        <span className="absolute left-[12%] top-[52%] h-px w-[78%] rotate-[9deg] bg-white/18" />
-        <span className="absolute left-[45%] top-[8%] h-[86%] w-px rotate-[18deg] bg-white/20" />
-        <span className="absolute left-[66%] top-[12%] h-[76%] w-px rotate-[-22deg] bg-white/16" />
-      </div>
-
-      <div className="absolute left-5 top-5 rounded-full bg-ink/70 px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-white/68 backdrop-blur-xl">
-        {cityLabel}
-      </div>
-
-      {issues.map((issue) => {
-        const position = mapPosition(issue.location.lat, issue.location.lng);
-        return (
-          <motion.span
-            key={issue.id}
-            title={`${issue.id} · ${issue.urgencyScore}`}
-            className={cn(
-              "absolute grid size-5 place-items-center rounded-full border border-white/60 shadow-glow",
-              mapPointColor(issue.deadlineLevel)
-            )}
-            style={{ left: `${position.left}%`, top: `${position.top}%` }}
-            initial={{ scale: 0, opacity: 0 }}
-            whileInView={{ scale: 1, opacity: 1 }}
-            whileHover={{ scale: 1.45 }}
-            viewport={{ once: true }}
-          >
-            <span className="size-2 rounded-full bg-white" />
-          </motion.span>
-        );
-      })}
-    </div>
-  );
-}
-
-function mapPosition(lat: number, lng: number) {
-  const minLat = 43.18;
-  const maxLat = 43.37;
-  const minLng = 76.74;
-  const maxLng = 77.08;
-  const left = ((lng - minLng) / (maxLng - minLng)) * 100;
-  const top = 100 - ((lat - minLat) / (maxLat - minLat)) * 100;
-  return {
-    left: Math.max(6, Math.min(92, left)),
-    top: Math.max(10, Math.min(88, top))
-  };
-}
-
 function urgencyBadge(level: DeadlineLevel) {
   switch (level) {
     case "Critical":
-      return "bg-civic-coral text-ink";
+      return "bg-red-500 text-white";
     case "High":
-      return "bg-civic-gold text-ink";
+      return "bg-orange-400 text-ink";
     case "Medium":
-      return "bg-civic-cyan text-ink";
+      return "bg-yellow-300 text-ink";
     default:
-      return "bg-white/12 text-white";
-  }
-}
-
-function mapPointColor(level: DeadlineLevel) {
-  switch (level) {
-    case "Critical":
-      return "bg-civic-coral";
-    case "High":
-      return "bg-civic-gold";
-    case "Medium":
-      return "bg-civic-cyan";
-    default:
-      return "bg-white/45";
+      return "bg-green-400 text-ink";
   }
 }
 
