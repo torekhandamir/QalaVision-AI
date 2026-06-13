@@ -10,12 +10,19 @@ import { useIssues } from "./issue-provider";
 import { useLanguage } from "./language-provider";
 import { Reveal } from "./reveal";
 
-export function RiskMapPage() {
+export function RiskMapSection() {
+  return (
+    <section id="map" className="bg-pearl px-4 py-24 text-ink">
+      <RiskMapContent />
+    </section>
+  );
+}
+
+function RiskMapContent() {
   const { issues } = useIssues();
   const { t, locale } = useLanguage();
 
   return (
-    <main className="min-h-screen bg-pearl px-4 pb-20 pt-32 text-ink">
       <div className="mx-auto max-w-7xl">
         <Reveal>
           <div className="max-w-3xl">
@@ -69,7 +76,6 @@ export function RiskMapPage() {
           )}
         </div>
       </div>
-    </main>
   );
 
   function IssueMarker({ issue }: { issue: IssueRecord }) {

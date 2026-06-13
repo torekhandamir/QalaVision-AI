@@ -3,7 +3,6 @@
 /* eslint-disable @next/next/no-img-element -- Blob/data URL previews from camera upload cannot be optimized by next/image. */
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   Camera,
   LocateFixed,
@@ -23,14 +22,14 @@ import {
   type GeoPoint,
   type ProblemType
 } from "@/lib/ai-analysis";
+import { issueFromAnalysis } from "@/lib/demo-data";
 import { cn } from "@/lib/utils";
 import { useIssues } from "./issue-provider";
 import { useLanguage } from "./language-provider";
 import { Reveal } from "./reveal";
 
 export function SubmissionSection() {
-  const router = useRouter();
-  const { setLatestAnalysis } = useIssues();
+  const { addIssue } = useIssues();
   const { t, locale } = useLanguage();
   const [district, setDistrict] = useState<DistrictId>("almaly");
   const [problem, setProblem] = useState<ProblemType>("pothole");
@@ -45,6 +44,7 @@ export function SubmissionSection() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [submittedIssueId, setSubmittedIssueId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -109,14 +109,23 @@ export function SubmissionSection() {
       locale
     };
     const result = await analyzeIssue(imageFile, formData);
-
-    setLatestAnalysis({
-      result,
-      formData,
-      photoDataUrl: imageDataUrl
+    const issue = issueFromAnalysis(result, {
+      district,
+      description,
+      address,
+      location,
+      hasPhoto: Boolean(imageDataUrl),
+      photoUrl: imageDataUrl ?? undefined
     });
+
+    addIssue(issue);
+    setSubmittedIssueId(issue.id);
     setLoading(false);
-    router.push("/analysis");
+    window.setTimeout(() => {
+      document
+        .getElementById("dashboard")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 250);
   }
 
   const locationMessage =
@@ -127,7 +136,10 @@ export function SubmissionSection() {
         : "";
 
   return (
-    <section className="relative min-h-screen overflow-hidden bg-pearl px-4 pb-20 pt-32 text-ink">
+    <section
+      id="submit"
+      className="relative min-h-screen overflow-hidden bg-pearl px-4 pb-20 pt-32 text-ink"
+    >
       <div className="absolute left-0 top-24 h-72 w-72 rounded-full bg-civic-mint/16 blur-3xl" />
       <div className="absolute right-0 top-96 h-72 w-72 rounded-full bg-civic-coral/12 blur-3xl" />
 
@@ -302,9 +314,11 @@ export function SubmissionSection() {
                 {loading ? t.form.analyzing : t.form.submit}
               </motion.button>
 
-              <p className="text-center text-xs font-semibold text-ink/45">
-                {t.misc.readyApi}
-              </p>
+              {submittedIssueId ? (
+                <div className="rounded-2xl border border-civic-mint/40 bg-civic-mint/14 px-4 py-3 text-center text-sm font-extrabold text-ink">
+                  {t.form.submitted}: {submittedIssueId}
+                </div>
+              ) : null}
             </div>
           </form>
         </Reveal>

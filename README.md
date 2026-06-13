@@ -4,13 +4,12 @@
 
 QalaVision AI is an AI-ready GovTech MVP for Almaty. Citizens submit photo evidence of urban issues, and the platform turns each report into explainable prioritization for akimat teams: urgency, social impact, relevance for city services, estimated repair budget, recommended deadline and a full operational report.
 
-## MVP Pages
+## MVP Flow
 
-- `/` — premium GovTech landing page with product value, stats and calls to action.
-- `/submit` — citizen issue submission with photo upload, phone camera capture, preview, district selection, geolocation, manual address and description.
-- `/analysis` — AI analysis result page with uploaded photo, detected issue, confidence, urgency, akimat relevance, social impact, budget, deadline, explanation and generated report.
-- `/dashboard` — akimat dashboard with KPI cards, readable Recharts charts, filters, issue table and priority queue.
-- `/map` — real Leaflet/OpenStreetMap risk map of Almaty with colored issue markers and popups.
+- `/` — single-page vertical product flow: landing, citizen submission, akimat dashboard and risk map.
+- Submit section — photo upload, phone camera capture, preview, district selection, geolocation, manual address and description.
+- Dashboard section — KPI cards, readable Recharts charts, filters, issue table and priority queue.
+- Risk map section — real Leaflet/OpenStreetMap map of Almaty with colored issue markers and popups.
 - `/admin/issues/[id]` — full issue details page for city staff.
 
 ## Why It Matters
@@ -45,7 +44,7 @@ Input:
 - geolocation
 - manual address
 - citizen description
-- selected fallback problem type
+- selected problem type
 
 Output:
 
@@ -195,10 +194,7 @@ Never expose it with `NEXT_PUBLIC_`. Variables with that prefix are bundled into
 
 ```txt
 app/                       Next.js routes
-app/submit                 Citizen submission page
-app/analysis               Analysis result page
-app/dashboard              Akimat dashboard
-app/map                    Leaflet/OpenStreetMap risk map
+app/page.tsx               Single-page citizen + akimat flow
 app/admin/issues/[id]      Admin issue details
 components/                UI components and page content
 lib/ai-analysis.ts         AI-ready analysis module

@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { ArrowRight, BarChart3, Camera, MapPin, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import type { IssueRecord } from "@/lib/demo-data";
@@ -23,6 +22,7 @@ export function HeroSection({ issues }: HeroSectionProps) {
     (sum, issue) => sum + issue.estimatedRepairCostKZT,
     0
   );
+  const averageBudget = Math.round(totalBudget / totalIssues);
   const photoIssues = issues.filter((issue) => issue.hasPhoto).length;
   const districtCount = new Set(issues.map((issue) => issue.district)).size;
   const numberLocale = locale === "en" ? "en-US" : "ru-RU";
@@ -42,7 +42,7 @@ export function HeroSection({ issues }: HeroSectionProps) {
     },
     {
       label: t.stats.budget,
-      value: totalBudget,
+      value: averageBudget,
       suffix: " KZT",
       compact: true,
       icon: MapPin
@@ -50,7 +50,10 @@ export function HeroSection({ issues }: HeroSectionProps) {
   ];
 
   return (
-    <section className="relative min-h-screen overflow-hidden bg-ink px-4 pb-16 pt-32 text-white">
+    <section
+      id="top"
+      className="relative min-h-screen overflow-hidden bg-ink px-4 pb-16 pt-32 text-white"
+    >
       <div className="absolute inset-0">
         <Image
           src="/images/qalavision-hero.png"
@@ -87,12 +90,12 @@ export function HeroSection({ issues }: HeroSectionProps) {
 
           <Reveal delay={0.2}>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <ButtonLink href="/submit" primary>
+              <ButtonLink href="#submit" primary>
                 <Camera className="size-5" />
                 {t.hero.submitCta}
                 <ArrowRight className="size-5" />
               </ButtonLink>
-              <ButtonLink href="/dashboard">
+              <ButtonLink href="#dashboard">
                 <BarChart3 className="size-5" />
                 {t.hero.dashboardCta}
               </ButtonLink>
@@ -120,8 +123,8 @@ export function HeroSection({ issues }: HeroSectionProps) {
               <MiniSignal label={t.stats.districts} value={`${districtCount}/8`} />
             </div>
 
-            <Link
-              href="/map"
+            <a
+              href="#map"
               className="mt-5 flex min-h-40 items-end overflow-hidden rounded-3xl border border-white/10 bg-[linear-gradient(135deg,rgba(101,227,255,0.16),rgba(248,211,107,0.12),rgba(255,141,122,0.1))] p-4 transition hover:border-white/24"
             >
               <div>
@@ -130,7 +133,7 @@ export function HeroSection({ issues }: HeroSectionProps) {
                   OpenStreetMap · Almaty
                 </p>
               </div>
-            </Link>
+            </a>
           </div>
         </Reveal>
       </div>
@@ -173,7 +176,7 @@ function ButtonLink({
 }) {
   return (
     <motion.div whileHover={{ y: -3 }} whileTap={{ scale: 0.98 }}>
-      <Link
+      <a
         href={href}
         className={
           primary
@@ -182,7 +185,7 @@ function ButtonLink({
         }
       >
         {children}
-      </Link>
+      </a>
     </motion.div>
   );
 }

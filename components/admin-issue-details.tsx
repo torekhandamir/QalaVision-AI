@@ -30,7 +30,7 @@ export function AdminIssueDetails() {
         <div className="mx-auto max-w-4xl rounded-[2rem] bg-white p-8 shadow-glass">
           <h1 className="text-3xl font-extrabold text-ink">Issue not found</h1>
           <Link
-            href="/dashboard"
+            href="/#dashboard"
             className="mt-6 inline-flex items-center gap-2 rounded-full bg-ink px-5 py-3 font-extrabold text-white"
           >
             <ArrowLeft className="size-4" />
@@ -46,7 +46,7 @@ export function AdminIssueDetails() {
       <div className="mx-auto max-w-7xl">
         <Reveal>
           <Link
-            href="/dashboard"
+            href="/#dashboard"
             className="inline-flex items-center gap-2 text-sm font-extrabold text-ink/56 transition hover:text-ink"
           >
             <ArrowLeft className="size-4" />

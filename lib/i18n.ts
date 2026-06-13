@@ -13,14 +13,14 @@ export const statusLabels: Record<Locale, Record<IssueStatus, string>> = {
     completed: "Completed"
   },
   ru: {
-    pending: "Pending",
-    in_progress: "In Progress",
-    completed: "Completed"
+    pending: "Ожидает",
+    in_progress: "В работе",
+    completed: "Завершено"
   },
   kz: {
-    pending: "Pending",
-    in_progress: "In Progress",
-    completed: "Completed"
+    pending: "Күтуде",
+    in_progress: "Жұмыста",
+    completed: "Аяқталды"
   }
 };
 
@@ -29,13 +29,12 @@ export const copy = {
     nav: {
       product: "Home",
       submit: "Submit",
-      ai: "Analysis",
-      dashboard: "Dashboard",
+      dashboard: "Панель",
       map: "Risk map"
     },
     hero: {
       eyebrow: "Track 3 · City Safety & Social Services",
-      title: "AI-ready urban safety platform for Almaty",
+      title: "QalaVision AI for safer Almaty streets",
       subtitle:
         "QalaVision AI turns citizen photos into explainable repair priority, budget estimates and operational decisions for akimat teams.",
       submitCta: "Submit issue",
@@ -48,7 +47,7 @@ export const copy = {
     stats: {
       detected: "Detected issues",
       urgency: "Average urgency",
-      budget: "Estimated repair budget",
+      budget: "Average repair budget",
       photoReady: "Photo-backed submissions",
       districts: "District coverage"
     },
@@ -57,10 +56,6 @@ export const copy = {
       citizenTitle: "Submit a street issue with evidence",
       citizenSubtitle:
         "Upload or capture a photo, share location, add address context and let QalaVision AI prepare an actionable report.",
-      resultKicker: "AI analysis",
-      resultTitle: "Urban risk analysis",
-      resultEmpty:
-        "Submit an issue first to generate a result with confidence, urgency, akimat relevance and repair budget.",
       dashboardKicker: "Akimat operations",
       dashboardTitle: "Repair prioritization dashboard",
       dashboardSubtitle:
@@ -81,32 +76,25 @@ export const copy = {
       addressPlaceholder: "Example: Abylai Khan Ave, near Tole Bi",
       photo: "Upload or take photo",
       photoHint: "On mobile, this can open the rear camera.",
-      problem: "Problem type fallback",
+      problem: "Problem type",
       description: "Short description",
       descriptionPlaceholder:
         "Example: deep pothole near school crossing, cars avoid it and pedestrians are at risk.",
-      submit: "Analyze issue",
-      analyzing: "AI is analyzing urban risk...",
+      submit: "Submit issue",
+      analyzing: "Submitting issue...",
       confidenceBoost: "Photo attached: analysis confidence will be higher",
       noPhoto: "No photo yet",
       preview: "Photo preview",
-      reset: "Clear"
+      reset: "Clear",
+      submitted: "Issue added to dashboard"
     },
     result: {
-      uploadedPhoto: "Uploaded photo",
       detectedProblem: "Detected issue",
-      confidence: "Confidence",
       urgency: "Urgency score",
       relevance: "Relevance for akimat",
       socialImpact: "Social impact",
       cost: "Estimated repair budget",
-      deadline: "Recommended deadline",
-      explanation: "AI explanation",
-      complaint: "Generated report text",
-      formula: "Scoring formula",
-      model: "Analysis engine",
-      send: "Send to Akimat Dashboard",
-      sent: "Sent to dashboard"
+      deadline: "Recommended deadline"
     },
     dashboard: {
       totalIssues: "Total issues",
@@ -152,26 +140,23 @@ export const copy = {
       yes: "Yes",
       no: "No",
       kzt: "KZT",
-      liveDemo: "Frontend MVP, AI-ready architecture",
-      readyApi:
-        "The analysis module can be replaced by OpenAI API, custom computer vision or YOLO later."
+      liveDemo: "Live workflow"
     }
   },
   ru: {
     nav: {
       product: "Главная",
       submit: "Заявка",
-      ai: "Анализ",
       dashboard: "Dashboard",
       map: "Карта"
     },
     hero: {
       eyebrow: "Track 3 · City Safety & Social Services",
-      title: "AI-ready платформа городской безопасности для Алматы",
+      title: "QalaVision AI для безопасных улиц Алматы",
       subtitle:
         "QalaVision AI превращает фото жителей в объяснимый приоритет ремонта, оценку бюджета и решения для команд акимата.",
       submitCta: "Подать заявку",
-      dashboardCta: "Открыть dashboard",
+      dashboardCta: "Открыть панель",
       mapCta: "Открыть карту",
       visualBadge: "Workflow для акимата",
       visualTitle:
@@ -180,7 +165,7 @@ export const copy = {
     stats: {
       detected: "Обнаружено проблем",
       urgency: "Средняя срочность",
-      budget: "Оценочный бюджет ремонта",
+      budget: "Средний бюджет ремонта",
       photoReady: "Заявки с фото",
       districts: "Покрытие районов"
     },
@@ -189,12 +174,8 @@ export const copy = {
       citizenTitle: "Сообщите о городской проблеме с доказательством",
       citizenSubtitle:
         "Загрузите или сделайте фото, добавьте геолокацию, адрес и описание, а QalaVision AI подготовит отчет.",
-      resultKicker: "AI-анализ",
-      resultTitle: "Анализ городского риска",
-      resultEmpty:
-        "Сначала отправьте заявку, чтобы получить confidence, urgency, relevance и бюджет ремонта.",
       dashboardKicker: "Операции акимата",
-      dashboardTitle: "Dashboard приоритизации ремонта",
+      dashboardTitle: "Панель приоритизации ремонта",
       dashboardSubtitle:
         "Читаемые метрики, графики и priority queue для планирования городских служб.",
       mapTitle: "Карта рисков Алматы",
@@ -213,32 +194,25 @@ export const copy = {
       addressPlaceholder: "Например: проспект Абылай хана, рядом с Толе би",
       photo: "Загрузить или сделать фото",
       photoHint: "На телефоне может открыться задняя камера.",
-      problem: "Fallback тип проблемы",
+      problem: "Тип проблемы",
       description: "Короткое описание",
       descriptionPlaceholder:
         "Пример: глубокая яма возле школьного перехода, машины объезжают ее и пешеходы рискуют.",
-      submit: "Проанализировать",
-      analyzing: "AI анализирует городской риск...",
+      submit: "Оставить заявку",
+      analyzing: "Заявка обрабатывается...",
       confidenceBoost: "Фото добавлено: уверенность анализа будет выше",
       noPhoto: "Фото пока нет",
       preview: "Превью фото",
-      reset: "Очистить"
+      reset: "Очистить",
+      submitted: "Заявка добавлена в панель"
     },
     result: {
-      uploadedPhoto: "Загруженное фото",
       detectedProblem: "Найденная проблема",
-      confidence: "Confidence",
-      urgency: "Urgency score",
-      relevance: "Relevance для акимата",
-      socialImpact: "Social impact",
+      urgency: "Срочность",
+      relevance: "Релевантность для акимата",
+      socialImpact: "Социальное влияние",
       cost: "Оценочный бюджет ремонта",
-      deadline: "Рекомендуемый срок",
-      explanation: "AI объяснение",
-      complaint: "Сгенерированный report",
-      formula: "Формула оценки",
-      model: "Analysis engine",
-      send: "Отправить в dashboard акимата",
-      sent: "Отправлено в dashboard"
+      deadline: "Рекомендуемый срок"
     },
     dashboard: {
       totalIssues: "Всего заявок",
@@ -258,13 +232,13 @@ export const copy = {
       byDistrict: "Заявки по районам",
       urgencyDistribution: "Распределение срочности",
       budgetByCategory: "Бюджет по категориям",
-      queue: "Priority queue",
+      queue: "Очередь приоритетов",
       topIssues: "Что чинить первым",
       issue: "Заявка",
       area: "Район",
-      urgency: "Urgency",
-      relevance: "Relevance",
-      socialImpact: "Impact",
+      urgency: "Срочность",
+      relevance: "Релевантность",
+      socialImpact: "Влияние",
       budget: "Бюджет",
       deadline: "Срок",
       status: "Статус",
@@ -284,26 +258,23 @@ export const copy = {
       yes: "Да",
       no: "Нет",
       kzt: "KZT",
-      liveDemo: "Frontend MVP, AI-ready архитектура",
-      readyApi:
-        "Модуль анализа можно заменить на OpenAI API, custom computer vision или YOLO."
+      liveDemo: "Рабочий процесс"
     }
   },
   kz: {
     nav: {
       product: "Басты",
       submit: "Өтініш",
-      ai: "Талдау",
-      dashboard: "Dashboard",
+      dashboard: "Панель",
       map: "Карта"
     },
     hero: {
       eyebrow: "Track 3 · City Safety & Social Services",
-      title: "Алматыға арналған AI-ready қалалық қауіпсіздік платформасы",
+      title: "QalaVision AI: Алматы көшелерінің қауіпсіздігі",
       subtitle:
         "QalaVision AI тұрғын фотосын түсіндірілетін жөндеу басымдығына, бюджет бағасына және әкімдік шешіміне айналдырады.",
       submitCta: "Өтініш жіберу",
-      dashboardCta: "Dashboard ашу",
+      dashboardCta: "Панельді ашу",
       mapCta: "Картаны көру",
       visualBadge: "Әкімдікке дайын workflow",
       visualTitle:
@@ -312,7 +283,7 @@ export const copy = {
     stats: {
       detected: "Анықталған мәселелер",
       urgency: "Орташа шұғылдық",
-      budget: "Жөндеу бюджеті",
+      budget: "Орташа жөндеу бюджеті",
       photoReady: "Фото қосылған өтініштер",
       districts: "Аудандар қамтылуы"
     },
@@ -321,12 +292,8 @@ export const copy = {
       citizenTitle: "Қалалық мәселені дәлелмен жіберіңіз",
       citizenSubtitle:
         "Фото жүктеп немесе түсіріп, геолокация, мекенжай және сипаттама қосыңыз. QalaVision AI есеп дайындайды.",
-      resultKicker: "AI талдау",
-      resultTitle: "Қалалық тәуекел талдауы",
-      resultEmpty:
-        "Confidence, urgency, relevance және бюджет алу үшін алдымен өтініш жіберіңіз.",
       dashboardKicker: "Әкімдік операциялары",
-      dashboardTitle: "Жөндеу басымдығы dashboard",
+      dashboardTitle: "Жөндеу басымдығы панелі",
       dashboardSubtitle:
         "Қалалық қызметтерді жоспарлауға арналған метрикалар, графиктер және priority queue.",
       mapTitle: "Алматы тәуекел картасы",
@@ -345,32 +312,25 @@ export const copy = {
       addressPlaceholder: "Мысалы: Абылай хан даңғылы, Төле би маңы",
       photo: "Фото жүктеу немесе түсіру",
       photoHint: "Телефонда артқы камера ашылуы мүмкін.",
-      problem: "Fallback мәселе түрі",
+      problem: "Мәселе түрі",
       description: "Қысқа сипаттама",
       descriptionPlaceholder:
         "Мысал: мектеп өткелі жанында терең шұңқыр бар, көліктер айналып өтіп, жаяу жүргіншілерге қауіп төнеді.",
-      submit: "Талдау",
-      analyzing: "AI қалалық тәуекелді талдап жатыр...",
+      submit: "Өтініш жіберу",
+      analyzing: "Өтініш өңделіп жатыр...",
       confidenceBoost: "Фото қосылды: талдау сенімділігі жоғары болады",
       noPhoto: "Фото әлі жоқ",
       preview: "Фото preview",
-      reset: "Тазалау"
+      reset: "Тазалау",
+      submitted: "Өтініш панельге қосылды"
     },
     result: {
-      uploadedPhoto: "Жүктелген фото",
       detectedProblem: "Анықталған мәселе",
-      confidence: "Confidence",
-      urgency: "Urgency score",
-      relevance: "Әкімдікке relevance",
-      socialImpact: "Social impact",
+      urgency: "Шұғылдық",
+      relevance: "Әкімдікке релеванттылық",
+      socialImpact: "Әлеуметтік әсер",
       cost: "Жөндеу бюджеті",
-      deadline: "Ұсынылатын мерзім",
-      explanation: "AI түсіндірмесі",
-      complaint: "Жасалған report",
-      formula: "Бағалау формуласы",
-      model: "Analysis engine",
-      send: "Әкімдік dashboard-ына жіберу",
-      sent: "Dashboard-қа жіберілді"
+      deadline: "Ұсынылатын мерзім"
     },
     dashboard: {
       totalIssues: "Барлық өтініштер",
@@ -390,13 +350,13 @@ export const copy = {
       byDistrict: "Аудан бойынша өтініштер",
       urgencyDistribution: "Шұғылдық таралуы",
       budgetByCategory: "Санат бойынша бюджет",
-      queue: "Priority queue",
+      queue: "Басымдық кезегі",
       topIssues: "Алдымен жөнделетін мәселелер",
       issue: "Өтініш",
       area: "Аудан",
-      urgency: "Urgency",
-      relevance: "Relevance",
-      socialImpact: "Impact",
+      urgency: "Шұғылдық",
+      relevance: "Релеванттылық",
+      socialImpact: "Әсер",
       budget: "Бюджет",
       deadline: "Мерзім",
       status: "Статус",
@@ -416,9 +376,7 @@ export const copy = {
       yes: "Иә",
       no: "Жоқ",
       kzt: "KZT",
-      liveDemo: "Frontend MVP, AI-ready архитектура",
-      readyApi:
-        "Талдау модулін OpenAI API, custom computer vision немесе YOLO-ға ауыстыруға болады."
+      liveDemo: "Жұмыс процесі"
     }
   }
 } as const;

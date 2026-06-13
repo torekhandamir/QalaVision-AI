@@ -117,7 +117,10 @@ export function DashboardSection({ issues }: DashboardSectionProps) {
   const numberLocale = locale === "en" ? "en-US" : "ru-RU";
 
   return (
-    <main className="min-h-screen bg-ink px-4 pb-20 pt-32 text-white">
+    <section
+      id="dashboard"
+      className="relative min-h-screen bg-ink px-4 pb-20 pt-32 text-white"
+    >
       <div className="absolute inset-0 -z-0 bg-radial-grid" />
       <div className="relative mx-auto max-w-7xl">
         <Reveal>
@@ -211,7 +214,12 @@ export function DashboardSection({ issues }: DashboardSectionProps) {
                       <CartesianGrid stroke="rgba(255,255,255,0.12)" vertical={false} />
                       <XAxis dataKey="name" tick={axisTick} axisLine={false} tickLine={false} />
                       <YAxis allowDecimals={false} tick={axisTick} axisLine={false} tickLine={false} />
-                      <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "rgba(255,255,255,0.07)" }} />
+                      <Tooltip
+                        contentStyle={tooltipStyle}
+                        labelStyle={tooltipLabelStyle}
+                        itemStyle={tooltipItemStyle}
+                        cursor={{ fill: "rgba(255,255,255,0.07)" }}
+                      />
                       <Legend wrapperStyle={{ color: "#fff" }} />
                       <Bar name={t.dashboard.totalIssues} dataKey="issues" radius={[8, 8, 2, 2]} fill="#38bdf8" />
                     </BarChart>
@@ -228,14 +236,18 @@ export function DashboardSection({ issues }: DashboardSectionProps) {
                         innerRadius={48}
                         outerRadius={82}
                         paddingAngle={3}
-                        label
+                        label={{ fill: "#f8fafc", fontSize: 13, fontWeight: 800 }}
                       >
                         {urgencyDistribution.map((entry, index) => (
                           <Cell key={entry.name} fill={chartColors[index]} />
                         ))}
                       </Pie>
-                      <Tooltip contentStyle={tooltipStyle} />
-                      <Legend wrapperStyle={{ color: "#fff", fontSize: 12 }} />
+                      <Tooltip
+                        contentStyle={tooltipStyle}
+                        labelStyle={tooltipLabelStyle}
+                        itemStyle={tooltipItemStyle}
+                      />
+                      <Legend wrapperStyle={{ color: "#f8fafc", fontSize: 12 }} />
                     </PieChart>
                   </ResponsiveContainer>
                 </ChartBox>
@@ -258,6 +270,8 @@ export function DashboardSection({ issues }: DashboardSectionProps) {
                         />
                         <Tooltip
                           contentStyle={tooltipStyle}
+                          labelStyle={tooltipLabelStyle}
+                          itemStyle={tooltipItemStyle}
                           formatter={(value) => formatKZT(Number(value), locale)}
                           cursor={{ fill: "rgba(255,255,255,0.07)" }}
                         />
@@ -358,18 +372,28 @@ export function DashboardSection({ issues }: DashboardSectionProps) {
           </Panel>
         </Reveal>
       </div>
-    </main>
+    </section>
   );
 }
 
 const axisTick = { fill: "rgba(255,255,255,0.78)", fontSize: 11 };
 
 const tooltipStyle = {
-  background: "rgba(7,16,18,0.96)",
-  border: "1px solid rgba(255,255,255,0.18)",
+  background: "#ffffff",
+  border: "1px solid rgba(7,16,18,0.14)",
   borderRadius: "14px",
-  color: "#fff",
+  color: "#071012",
   boxShadow: "0 20px 60px rgba(0,0,0,0.32)"
+};
+
+const tooltipLabelStyle = {
+  color: "#071012",
+  fontWeight: 800
+};
+
+const tooltipItemStyle = {
+  color: "#071012",
+  fontWeight: 700
 };
 
 function FilterSelect({
