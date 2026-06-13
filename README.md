@@ -63,18 +63,6 @@ QalaVision AI строит понятный workflow:
 | LocalStorage | Новые заявки сохраняются в браузере | Достаточно для демо и хакатона |
 | Документация | Архитектура, методология, запуск, ограничения | Закрывает критерий documentation |
 
-## Скриншоты
-
-> Пути для скриншотов в репозитории:
-
-![Home](public/screenshots/home.png)
-
-![Submit](public/screenshots/submit.png)
-
-![Dashboard](public/screenshots/dashboard.png)
-
-![Risk map](public/screenshots/risk-map.png)
-
 ## Где здесь искусственный интеллект
 
 AI используется не как декоративный чат, а как операционный слой принятия решений.
@@ -347,7 +335,6 @@ lib/
 
 public/
   images/                     Визуальные ассеты проекта
-  screenshots/                Скриншоты для README
 ```
 
 ## Риски и ограничения
