@@ -29,7 +29,7 @@ export const copy = {
     nav: {
       product: "Home",
       submit: "Submit",
-      dashboard: "Панель",
+      dashboard: "Dashboard",
       map: "Risk map"
     },
     hero: {
@@ -90,12 +90,19 @@ export const copy = {
       analysisError: "Analysis service is unavailable. Check OpenAI configuration."
     },
     result: {
+      title: "AI analysis result",
       detectedProblem: "Detected issue",
+      confidence: "Confidence",
       urgency: "Urgency score",
       relevance: "Relevance for akimat",
       socialImpact: "Social impact",
       cost: "Estimated repair budget",
-      deadline: "Recommended deadline"
+      deadline: "Recommended deadline",
+      explanation: "Why this score",
+      recommendation: "Repair recommendation",
+      report: "Generated report for akimat",
+      openDashboard: "Open dashboard",
+      openFullIssue: "Open full issue"
     },
     dashboard: {
       totalIssues: "Total issues",
@@ -148,7 +155,7 @@ export const copy = {
     nav: {
       product: "Главная",
       submit: "Заявка",
-      dashboard: "Dashboard",
+      dashboard: "Панель",
       map: "Карта"
     },
     hero: {
@@ -209,12 +216,19 @@ export const copy = {
       analysisError: "Сервис анализа недоступен. Проверьте настройку OpenAI."
     },
     result: {
+      title: "Результат AI-анализа",
       detectedProblem: "Найденная проблема",
+      confidence: "Уверенность",
       urgency: "Срочность",
       relevance: "Релевантность для акимата",
       socialImpact: "Социальное влияние",
       cost: "Оценочный бюджет ремонта",
-      deadline: "Рекомендуемый срок"
+      deadline: "Рекомендуемый срок",
+      explanation: "Почему такая оценка",
+      recommendation: "Рекомендация по ремонту",
+      report: "Сгенерированный текст для акимата",
+      openDashboard: "Открыть панель",
+      openFullIssue: "Открыть полную заявку"
     },
     dashboard: {
       totalIssues: "Всего заявок",
@@ -328,12 +342,19 @@ export const copy = {
       analysisError: "Талдау сервисі қолжетімсіз. OpenAI баптауын тексеріңіз."
     },
     result: {
+      title: "AI талдау нәтижесі",
       detectedProblem: "Анықталған мәселе",
+      confidence: "Сенімділік",
       urgency: "Шұғылдық",
       relevance: "Әкімдікке релеванттылық",
       socialImpact: "Әлеуметтік әсер",
       cost: "Жөндеу бюджеті",
-      deadline: "Ұсынылатын мерзім"
+      deadline: "Ұсынылатын мерзім",
+      explanation: "Баға себебі",
+      recommendation: "Жөндеу ұсынысы",
+      report: "Әкімдікке жасалған мәтін",
+      openDashboard: "Панельді ашу",
+      openFullIssue: "Толық өтінішті ашу"
     },
     dashboard: {
       totalIssues: "Барлық өтініштер",

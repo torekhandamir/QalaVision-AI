@@ -3,13 +3,16 @@
 /* eslint-disable @next/next/no-img-element -- Blob/data URL previews from camera upload cannot be optimized by next/image. */
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import {
   Camera,
+  CheckCircle2,
   LocateFixed,
   MapPin,
   RotateCcw,
   Send,
-  UploadCloud
+  UploadCloud,
+  WalletCards
 } from "lucide-react";
 import { motion } from "framer-motion";
 import {
@@ -18,11 +21,13 @@ import {
   districts,
   problemLabels,
   problemTypes,
+  type AIAnalysisResult,
   type DistrictId,
   type GeoPoint,
   type ProblemType
 } from "@/lib/ai-analysis";
 import { issueFromAnalysis } from "@/lib/demo-data";
+import { formatKZT, formatPercent } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useIssues } from "./issue-provider";
 import { useLanguage } from "./language-provider";
@@ -45,8 +50,15 @@ export function SubmissionSection() {
   const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [submittedIssueId, setSubmittedIssueId] = useState<string | null>(null);
+  const [analysisResult, setAnalysisResult] = useState<AIAnalysisResult | null>(
+    null
+  );
+  const [submittedPhotoPreview, setSubmittedPhotoPreview] = useState<string | null>(
+    null
+  );
   const [submitError, setSubmitError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const resultRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     return () => {
@@ -100,6 +112,9 @@ export function SubmissionSection() {
     event.preventDefault();
     setLoading(true);
     setSubmitError(null);
+    setSubmittedIssueId(null);
+    setAnalysisResult(null);
+    setSubmittedPhotoPreview(null);
 
     try {
       await new Promise((resolve) => setTimeout(resolve, 900));
@@ -123,10 +138,13 @@ export function SubmissionSection() {
 
       addIssue(issue);
       setSubmittedIssueId(issue.id);
+      setAnalysisResult(result);
+      setSubmittedPhotoPreview(imageDataUrl ?? imagePreview);
       window.setTimeout(() => {
-        document
-          .getElementById("dashboard")
-          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+        resultRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start"
+        });
       }, 250);
     } catch {
       setSubmitError(t.form.analysisError);
@@ -335,9 +353,169 @@ export function SubmissionSection() {
             </div>
           </form>
         </Reveal>
+
+        {analysisResult ? (
+          <Reveal delay={0.1}>
+            <div ref={resultRef} id="submit-result" className="scroll-mt-28">
+              <SubmissionResultCard
+                result={analysisResult}
+                issueId={submittedIssueId}
+                photoPreview={submittedPhotoPreview}
+              />
+            </div>
+          </Reveal>
+        ) : null}
       </div>
     </section>
   );
+}
+
+function SubmissionResultCard({
+  result,
+  issueId,
+  photoPreview
+}: {
+  result: AIAnalysisResult;
+  issueId: string | null;
+  photoPreview: string | null;
+}) {
+  const { t, locale } = useLanguage();
+
+  return (
+    <div className="light-glass mt-8 overflow-hidden rounded-[2rem] p-5 lg:p-7">
+      <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
+        <div>
+          <p className="inline-flex items-center gap-2 rounded-full border border-civic-mint/35 bg-civic-mint/14 px-4 py-2 text-sm font-extrabold text-ink">
+            <CheckCircle2 className="size-4 text-civic-mint" />
+            {t.result.title}
+          </p>
+          <h2 className="mt-4 text-3xl font-extrabold leading-tight text-ink sm:text-4xl">
+            {problemLabels[locale][result.detectedProblem]}
+          </h2>
+          <p className="mt-3 max-w-3xl text-base leading-7 text-ink/62">
+            {result.aiGeneratedDescription}
+          </p>
+        </div>
+
+        <div className="flex flex-wrap gap-3">
+          <a
+            href="#dashboard"
+            className="inline-flex h-12 items-center justify-center rounded-full bg-ink px-5 text-sm font-extrabold text-white transition hover:bg-ink/88"
+          >
+            {t.result.openDashboard}
+          </a>
+          {issueId ? (
+            <Link
+              href={`/admin/issues/${issueId}`}
+              className="inline-flex h-12 items-center justify-center rounded-full border border-ink/12 bg-white px-5 text-sm font-extrabold text-ink transition hover:border-ink/28"
+            >
+              {t.result.openFullIssue}
+            </Link>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="mt-6 grid gap-5 lg:grid-cols-[0.82fr_1.18fr]">
+        <div className="overflow-hidden rounded-3xl border border-ink/10 bg-ink">
+          {photoPreview ? (
+            <img
+              src={photoPreview}
+              alt={t.form.preview}
+              className="aspect-[4/3] w-full object-cover"
+            />
+          ) : (
+            <div className="grid aspect-[4/3] place-items-center px-6 text-center text-sm font-bold text-white/58">
+              {t.form.noPhoto}
+            </div>
+          )}
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <ResultMetric
+            label={t.result.confidence}
+            value={formatPercent(result.confidence)}
+          />
+          <ResultMetric
+            label={t.result.urgency}
+            value={`${result.urgencyScore}/100`}
+            accent={urgencyAccent(result.urgencyScore)}
+          />
+          <ResultMetric
+            label={t.result.relevance}
+            value={`${result.akimatRelevanceScore}/100`}
+          />
+          <ResultMetric
+            label={t.result.socialImpact}
+            value={`${result.socialImpactScore}/100`}
+          />
+          <ResultMetric
+            label={t.result.cost}
+            value={formatKZT(result.estimatedRepairCostKZT, locale)}
+            icon={<WalletCards className="size-4" />}
+          />
+          <ResultMetric label={t.result.deadline} value={result.repairDeadline} />
+        </div>
+      </div>
+
+      <div className="mt-5 grid gap-4 lg:grid-cols-3">
+        <ResultTextPanel title={t.result.explanation} text={result.explanation} />
+        <ResultTextPanel
+          title={t.result.recommendation}
+          text={result.repairRecommendation}
+        />
+        <ResultTextPanel title={t.result.report} text={result.fullReportForAkimat} />
+      </div>
+    </div>
+  );
+}
+
+function ResultMetric({
+  label,
+  value,
+  accent = "bg-civic-cyan/14 text-ink",
+  icon
+}: {
+  label: string;
+  value: string;
+  accent?: string;
+  icon?: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-3xl border border-ink/8 bg-white/72 p-4">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-ink/42">
+          {label}
+        </p>
+        {icon ? <span className="text-ink/42">{icon}</span> : null}
+      </div>
+      <p
+        className={cn(
+          "inline-flex rounded-2xl px-3 py-2 text-xl font-extrabold",
+          accent
+        )}
+      >
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function ResultTextPanel({ title, text }: { title: string; text: string }) {
+  return (
+    <div className="rounded-3xl border border-ink/8 bg-white/72 p-5">
+      <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-ink/42">
+        {title}
+      </p>
+      <p className="mt-3 text-sm font-semibold leading-6 text-ink/68">{text}</p>
+    </div>
+  );
+}
+
+function urgencyAccent(score: number) {
+  if (score >= 85) return "bg-red-500 text-white";
+  if (score >= 70) return "bg-orange-300 text-ink";
+  if (score >= 45) return "bg-yellow-300 text-ink";
+  return "bg-green-300 text-ink";
 }
 
 function Field({
