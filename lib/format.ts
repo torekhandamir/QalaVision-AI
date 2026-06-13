@@ -8,5 +8,6 @@ export function formatKZT(value: number, locale: Locale) {
 }
 
 export function formatPercent(value: number) {
-  return `${Math.round(value)}%`;
+  const normalized = value <= 1 ? value * 100 : value;
+  return `${Math.round(normalized)}%`;
 }
