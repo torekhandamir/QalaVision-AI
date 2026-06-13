@@ -1,7 +1,6 @@
 import {
   deadlineText,
   problemTypes,
-  runLocalRiskAnalysis,
   type AIAnalysisResult,
   type AnalyzeIssueFormData,
   type DeadlineLevel,
@@ -32,33 +31,34 @@ export async function POST(request: Request) {
     return Response.json({ error: "Missing formData" }, { status: 400 });
   }
 
-  const formData = JSON.parse(rawFormData) as AnalyzeIssueFormData;
-  const imageFile = image instanceof File ? image : null;
-  const fallback = await runLocalRiskAnalysis(imageFile, formData);
-
   if (!process.env.OPENAI_API_KEY) {
-    return Response.json(fallback);
+    return Response.json(
+      { error: "OPENAI_API_KEY is not configured" },
+      { status: 500 }
+    );
   }
 
+  const formData = JSON.parse(rawFormData) as AnalyzeIssueFormData;
+  const imageFile = image instanceof File ? image : null;
+
   try {
-    const result = await analyzeWithOpenAI(imageFile, formData, fallback);
+    const result = await analyzeWithOpenAI(imageFile, formData);
     return Response.json(result);
   } catch (error) {
     console.error("OpenAI analysis failed", error);
-    return Response.json(fallback);
+    return Response.json({ error: "AI analysis failed" }, { status: 502 });
   }
 }
 
 async function analyzeWithOpenAI(
   image: File | null,
-  formData: AnalyzeIssueFormData,
-  fallback: AIAnalysisResult
+  formData: AnalyzeIssueFormData
 ): Promise<AIAnalysisResult> {
   const model = process.env.OPENAI_MODEL ?? "gpt-5.5";
   const content: Array<Record<string, string>> = [
     {
       type: "input_text",
-      text: buildPrompt(formData, fallback)
+      text: buildPrompt(formData)
     }
   ];
 
@@ -94,15 +94,10 @@ async function analyzeWithOpenAI(
   const body = await response.json();
   const outputText = extractOutputText(body);
   const parsed = parseJsonObject(outputText) as OpenAIUrbanRiskPayload;
-  const normalized = normalizeOpenAIResult(parsed, fallback, formData);
-
-  return {
-    ...normalized,
-    modelVersion: `OpenAI ${model}`
-  };
+  return normalizeOpenAIResult(parsed, formData);
 }
 
-function buildPrompt(formData: AnalyzeIssueFormData, fallback: AIAnalysisResult) {
+function buildPrompt(formData: AnalyzeIssueFormData) {
   return `You are QalaVision AI, an urban safety analysis system for Almaty akimat.
 
 Analyze the citizen report and attached image if present.
@@ -130,16 +125,6 @@ Scoring rules:
 - repair deadlines: Critical 24 hours, High 3 days, Medium 7 days, Low 30 days.
 - repair costs: pothole 7000 KZT per m2, broken_sidewalk 12000 KZT per m2, trash 15000 KZT fixed, broken_streetlight 45000 KZT fixed, road_crack 5000 KZT per m2, flooding 80000 KZT fixed, damaged_sign 35000 KZT fixed.
 
-Use this deterministic baseline only as a calibration reference, not as the final answer:
-${JSON.stringify({
-    detectedProblem: fallback.detectedProblem,
-    confidence: fallback.confidence,
-    urgencyScore: fallback.urgencyScore,
-    akimatRelevanceScore: fallback.akimatRelevanceScore,
-    socialImpactScore: fallback.socialImpactScore,
-    estimatedRepairCostKZT: fallback.estimatedRepairCostKZT
-  })}
-
 Required JSON shape:
 {
   "detectedProblem": "one allowed problem type",
@@ -157,46 +142,45 @@ Required JSON shape:
 
 function normalizeOpenAIResult(
   result: OpenAIUrbanRiskPayload,
-  fallback: AIAnalysisResult,
   formData: AnalyzeIssueFormData
 ): AIAnalysisResult {
   const locale = formData.locale ?? "en";
-  const detectedProblem = problemTypes.includes(result.detectedProblem as ProblemType)
-    ? (result.detectedProblem as ProblemType)
-    : fallback.detectedProblem;
-  const urgencyScore = clampNumber(result.urgencyScore, fallback.urgencyScore);
+  const detectedProblem = requireProblemType(result.detectedProblem);
+  const urgencyScore = clampNumber(result.urgencyScore, "urgencyScore");
   const deadlineLevel = deadlineFromUrgency(urgencyScore);
   const akimatRelevanceScore = clampNumber(
     result.akimatRelevanceScore,
-    fallback.akimatRelevanceScore
+    "akimatRelevanceScore"
   );
 
   return {
-    ...fallback,
     detectedProblem,
-    confidence: clampNumber(result.confidence, fallback.confidence),
+    confidence: clampNumber(result.confidence, "confidence"),
     urgencyScore,
     akimatRelevanceScore,
-    akimateRelevanceScore: akimatRelevanceScore,
     socialImpactScore: clampNumber(
       result.socialImpactScore,
-      fallback.socialImpactScore
+      "socialImpactScore"
     ),
     estimatedRepairCostKZT: positiveInteger(
       result.estimatedRepairCostKZT,
-      fallback.estimatedRepairCostKZT
+      "estimatedRepairCostKZT"
     ),
     deadlineLevel,
     repairDeadline: deadlineText[locale][deadlineLevel],
-    explanation: result.explanation?.trim() || fallback.explanation,
-    aiGeneratedDescription:
-      result.aiGeneratedDescription?.trim() || fallback.aiGeneratedDescription,
-    fullReportForAkimat:
-      result.fullReportForAkimat?.trim() || fallback.fullReportForAkimat,
-    generatedComplaintText:
-      result.fullReportForAkimat?.trim() || fallback.generatedComplaintText,
-    repairRecommendation:
-      result.repairRecommendation?.trim() || fallback.repairRecommendation
+    explanation: requireText(result.explanation, "explanation"),
+    aiGeneratedDescription: requireText(
+      result.aiGeneratedDescription,
+      "aiGeneratedDescription"
+    ),
+    fullReportForAkimat: requireText(
+      result.fullReportForAkimat,
+      "fullReportForAkimat"
+    ),
+    repairRecommendation: requireText(
+      result.repairRecommendation,
+      "repairRecommendation"
+    )
   };
 }
 
@@ -248,16 +232,36 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object";
 }
 
-function clampNumber(value: unknown, fallback: number) {
+function requireProblemType(value: unknown) {
+  if (typeof value === "string" && problemTypes.includes(value as ProblemType)) {
+    return value as ProblemType;
+  }
+
+  throw new Error("OpenAI returned invalid detectedProblem");
+}
+
+function clampNumber(value: unknown, field: string) {
   const number = typeof value === "number" ? value : Number(value);
-  if (!Number.isFinite(number)) return fallback;
+  if (!Number.isFinite(number)) {
+    throw new Error(`OpenAI returned invalid ${field}`);
+  }
   return Math.max(0, Math.min(100, Math.round(number)));
 }
 
-function positiveInteger(value: unknown, fallback: number) {
+function positiveInteger(value: unknown, field: string) {
   const number = typeof value === "number" ? value : Number(value);
-  if (!Number.isFinite(number) || number <= 0) return fallback;
+  if (!Number.isFinite(number) || number <= 0) {
+    throw new Error(`OpenAI returned invalid ${field}`);
+  }
   return Math.round(number);
+}
+
+function requireText(value: unknown, field: string) {
+  if (typeof value === "string" && value.trim()) {
+    return value.trim();
+  }
+
+  throw new Error(`OpenAI returned invalid ${field}`);
 }
 
 function deadlineFromUrgency(score: number): DeadlineLevel {

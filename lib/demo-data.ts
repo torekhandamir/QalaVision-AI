@@ -21,7 +21,6 @@ export type IssueRecord = {
   confidence: number;
   urgencyScore: number;
   akimatRelevanceScore: number;
-  akimateRelevanceScore: number;
   socialImpactScore: number;
   estimatedRepairCostKZT: number;
   repairDeadline: string;
@@ -40,7 +39,6 @@ const demoPhoto = "/images/issue-pothole-demo.png";
 const baseIssues: Array<
   Omit<
     IssueRecord,
-    | "akimateRelevanceScore"
     | "repairRecommendation"
     | "aiGeneratedDescription"
     | "fullReportForAkimat"
@@ -302,7 +300,6 @@ export function issueFromAnalysis(
     confidence: result.confidence,
     urgencyScore: result.urgencyScore,
     akimatRelevanceScore: result.akimatRelevanceScore,
-    akimateRelevanceScore: result.akimatRelevanceScore,
     socialImpactScore: result.socialImpactScore,
     estimatedRepairCostKZT: result.estimatedRepairCostKZT,
     repairDeadline: result.repairDeadline,
@@ -320,7 +317,6 @@ export function issueFromAnalysis(
 function enrichIssue(
   issue: Omit<
     IssueRecord,
-    | "akimateRelevanceScore"
     | "repairRecommendation"
     | "aiGeneratedDescription"
     | "fullReportForAkimat"
@@ -336,7 +332,6 @@ function enrichIssue(
 
   return {
     ...issue,
-    akimateRelevanceScore: issue.akimatRelevanceScore,
     aiGeneratedDescription,
     repairRecommendation,
     fullReportForAkimat: `Akimat report: ${problem}. District: ${district}. Address: ${issue.address}. Urgency: ${issue.urgencyScore}/100. Akimat relevance: ${issue.akimatRelevanceScore}/100. Social impact: ${issue.socialImpactScore}/100. Estimated budget: ${budget} KZT. Deadline: ${deadline}. Recommendation: ${repairRecommendation} Citizen note: ${issue.description}`

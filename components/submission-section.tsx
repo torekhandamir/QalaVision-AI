@@ -45,6 +45,7 @@ export function SubmissionSection() {
   const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [submittedIssueId, setSubmittedIssueId] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -98,34 +99,40 @@ export function SubmissionSection() {
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true);
+    setSubmitError(null);
 
-    await new Promise((resolve) => setTimeout(resolve, 900));
-    const formData = {
-      district,
-      location,
-      address,
-      description,
-      selectedProblemType: problem,
-      locale
-    };
-    const result = await analyzeIssue(imageFile, formData);
-    const issue = issueFromAnalysis(result, {
-      district,
-      description,
-      address,
-      location,
-      hasPhoto: Boolean(imageDataUrl),
-      photoUrl: imageDataUrl ?? undefined
-    });
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 900));
+      const formData = {
+        district,
+        location,
+        address,
+        description,
+        selectedProblemType: problem,
+        locale
+      };
+      const result = await analyzeIssue(imageFile, formData);
+      const issue = issueFromAnalysis(result, {
+        district,
+        description,
+        address,
+        location,
+        hasPhoto: Boolean(imageDataUrl),
+        photoUrl: imageDataUrl ?? undefined
+      });
 
-    addIssue(issue);
-    setSubmittedIssueId(issue.id);
-    setLoading(false);
-    window.setTimeout(() => {
-      document
-        .getElementById("dashboard")
-        ?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 250);
+      addIssue(issue);
+      setSubmittedIssueId(issue.id);
+      window.setTimeout(() => {
+        document
+          .getElementById("dashboard")
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 250);
+    } catch {
+      setSubmitError(t.form.analysisError);
+    } finally {
+      setLoading(false);
+    }
   }
 
   const locationMessage =
@@ -317,6 +324,12 @@ export function SubmissionSection() {
               {submittedIssueId ? (
                 <div className="rounded-2xl border border-civic-mint/40 bg-civic-mint/14 px-4 py-3 text-center text-sm font-extrabold text-ink">
                   {t.form.submitted}: {submittedIssueId}
+                </div>
+              ) : null}
+
+              {submitError ? (
+                <div className="rounded-2xl border border-civic-coral/35 bg-civic-coral/12 px-4 py-3 text-center text-sm font-extrabold text-ink">
+                  {submitError}
                 </div>
               ) : null}
             </div>

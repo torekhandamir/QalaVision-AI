@@ -64,8 +64,8 @@ How it works:
 
 - In the browser, `analyzeIssue(image, formData)` sends a multipart request to `/api/analyze`.
 - `/api/analyze` uses `process.env.OPENAI_API_KEY` on the server.
-- If `OPENAI_API_KEY` exists, the route sends the citizen text and photo to the OpenAI Responses API.
-- If the key is not configured locally, the route falls back to the internal scoring engine so development still works.
+- The route sends the citizen text and photo to the OpenAI Responses API.
+- If the key is not configured, the route returns a configuration error instead of fabricating an analysis result.
 - The returned result is normalized into the same `AIAnalysisResult` shape used by the dashboard and admin page.
 - The API key is never exposed through browser JavaScript.
 
@@ -178,6 +178,8 @@ OPENAI_MODEL=gpt-5.5
 ```
 
 `OPENAI_MODEL` is optional. If it is not set, the server route uses `gpt-5.5`.
+
+Without `OPENAI_API_KEY`, the app still loads, but submitting a new issue cannot run AI analysis.
 
 For Vercel, add the key in the project dashboard:
 

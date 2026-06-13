@@ -86,7 +86,8 @@ export const copy = {
       noPhoto: "No photo yet",
       preview: "Photo preview",
       reset: "Clear",
-      submitted: "Issue added to dashboard"
+      submitted: "Issue added to dashboard",
+      analysisError: "Analysis service is unavailable. Check OpenAI configuration."
     },
     result: {
       detectedProblem: "Detected issue",
@@ -204,7 +205,8 @@ export const copy = {
       noPhoto: "Фото пока нет",
       preview: "Превью фото",
       reset: "Очистить",
-      submitted: "Заявка добавлена в панель"
+      submitted: "Заявка добавлена в панель",
+      analysisError: "Сервис анализа недоступен. Проверьте настройку OpenAI."
     },
     result: {
       detectedProblem: "Найденная проблема",
@@ -322,7 +324,8 @@ export const copy = {
       noPhoto: "Фото әлі жоқ",
       preview: "Фото preview",
       reset: "Тазалау",
-      submitted: "Өтініш панельге қосылды"
+      submitted: "Өтініш панельге қосылды",
+      analysisError: "Талдау сервисі қолжетімсіз. OpenAI баптауын тексеріңіз."
     },
     result: {
       detectedProblem: "Анықталған мәселе",
